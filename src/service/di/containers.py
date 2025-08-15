@@ -1,7 +1,11 @@
 from dishka import AsyncContainer, make_async_container
 
-from src.service.di.providers import LoggerProvider, \
-    ConfigProvider, DatabaseProvider
+from src.service.di.providers import (
+    ConfigProvider,
+    DatabaseProvider,
+    DownloaderProvider,
+    LoggerProvider,
+)
 
 
 def create_container() -> AsyncContainer:
@@ -9,6 +13,7 @@ def create_container() -> AsyncContainer:
         LoggerProvider(),
         ConfigProvider(),
         DatabaseProvider(),
+        DownloaderProvider(),
     ]
 
     return make_async_container(*containers)

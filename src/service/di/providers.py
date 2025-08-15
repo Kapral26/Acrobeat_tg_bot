@@ -3,6 +3,8 @@ import logging
 from dishka import FromDishka, Provider, Scope, provide
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 
+from src.service.downloader.repository import DownloaderRepo
+from src.service.downloader.service import DownloaderService
 from src.service.settings.config import Settings
 
 
@@ -30,7 +32,7 @@ class DatabaseProvider(Provider):
         from sqlalchemy.ext.asyncio import create_async_engine
 
         return create_async_engine(
-            url=settings.async_database_dsn,
+            url=settings.postgres.async_database_dsn,
             echo=settings.debug,
             pool_size=5,
             max_overflow=10,
@@ -41,3 +43,15 @@ class DatabaseProvider(Provider):
         """Возвращает фабрику асинхронных сессий."""
         return async_sessionmaker(engine)
 
+
+class DownloaderProvider(Provider):
+    @provide(scope=Scope.REQUEST)
+    async def get_repository(self) -> DownloaderRepo:
+        return DownloaderRepo()
+
+    @provide(scope=Scope.REQUEST)
+    async def get_service(
+        self,
+        repository: FromDishka[DownloaderRepo],
+    ) -> DownloaderService:
+        return DownloaderService(repository)

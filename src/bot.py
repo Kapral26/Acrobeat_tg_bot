@@ -14,7 +14,7 @@ settings = Settings()
 
 class TelegramBot:
     def __init__(self):
-        self.bot = Bot(token=settings.bot_token.get_secret_value())
+        self.bot = Bot(token=settings.bot.token.get_secret_value())
         self.storage = get_storage()
         self.dp = Dispatcher(storage=self.storage)
 

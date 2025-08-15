@@ -1,59 +1,34 @@
-from aiogram import Bot, F, types
-from aiogram.enums import ChatType
-from aiogram.filters import Command, CommandObject, CommandStart
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from dishka import FromDishka
+from aiogram import Bot, types
+from aiogram.filters import Command
 from dishka.integrations.aiogram import inject
 
 from src.domains.start import start_router
 from src.domains.start.keyboards import get_start_inline_keyboard
-from src.domains.users.services import UserService
 
 
 @start_router.message(Command("start"))
 @inject
-async def start_group(
+async def start_command(
     message: types.Message,
     bot: Bot,
-    user_bot_service: FromDishka[UserService],
 ):
     """Обработчик команды /start."""
-    user = await user_bot_service.is_user_in_chat(message)
-
-    kb = await get_start_inline_keyboard(bot, user.in_chat, message.chat.title)
     await message.answer(
         """
-*Привет!* ✌️
-➡️ Иди по *известному* направлению.
+🎵 Привет!
+Я — бот, который поможет найти трек по названию или тексту, вырезать нужный фрагмент и отправить тебе его прямо сюда.
 
-🔫 Хочешь сыграть в *Русскую рулетку*? — *Зарегистрируйся!*
+Вот что я умею:
 
-🤡*Личный кабинет*:
-- Можно посмотреть статистику по конкретному чату.
-- Добавить новые фразы.
+🔍 Найти трек по названию или исполнителю
+✂️ Нарезать нужный фрагмент (по умолчанию 30 секунд с начала)
+📥 Отправить тебе файл в .mp3 через быструю ссылку
+
+Просто пришли мне:
+— название трека
+— или строку из песни
+
+И я найду лучший вариант ✨
 """,
-        reply_markup=kb,
-        parse_mode="Markdown",
+        reply_markup=await get_start_inline_keyboard(),
     )
-
-
-# Обработчик deep link из группы
-@start_router.message(CommandStart(deep_link=True), F.chat.type == ChatType.PRIVATE)
-async def handle_deeplink(message: types.Message, command: CommandObject, bot: Bot):
-    if command.args and command.args.startswith("from_group_"):
-        group_id = command.args.split("_")[-1]
-        await message.answer(
-            f"Вы перешли из группы {group_id}. Добро пожаловать в личные сообщения!",
-            reply_markup=InlineKeyboardMarkup(
-                inline_keyboard=[
-                    [
-                        InlineKeyboardButton(
-                            text="Основное меню", callback_data="main_menu"
-                        )
-                    ]
-                ]
-            ),
-        )
-
-
-
