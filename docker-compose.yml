@@ -21,6 +21,17 @@ services:
     tty: true
     stdin_open: true
 
+  minio:
+    image: minio/minio
+    container_name: minio
+    env_file:
+      - .env
+    ports:
+      - "9000:9000"  # S3 API
+      - "9001:9001"  # Web UI
+    command: server /data --console-address ":9001"
+    volumes:
+      - ./minio_data:/data
 
 networks:
   my_app_network:
