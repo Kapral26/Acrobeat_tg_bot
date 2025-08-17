@@ -1,4 +1,3 @@
-
 """
 TODO попробовать достать музыку отсюда
 https://ytmp3.cc
@@ -10,31 +9,35 @@ https://music.youtube.com
 import asyncio
 from dataclasses import dataclass
 from functools import partial
+from pathlib import Path
 
 from yt_dlp import YoutubeDL
+
+from src.service.settings.config import Settings
 
 
 @dataclass
 class DownloaderRepo:
-    @staticmethod
-    def _download(url: str, output_path: str):
+    settings: Settings
+
+    def _download(self, url: str, output_path: Path):
         ydl_opts = {
             "format": "bestaudio/best",
-            "outtmpl": output_path,
+            "outtmpl": output_path.with_suffix("").as_posix(),
             "postprocessors": [
                 {
                     "key": "FFmpegExtractAudio",
                     "preferredcodec": "mp3",
                     "preferredquality": "192",
-                }
+                },
             ],
-            "quiet": True,
+            "quiet": not self.settings.debug,
         }
 
         with YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
 
-    async def download_track(self, url: str, output_path: str):
+    async def download_track(self, url: str, output_path: Path):
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, partial(self._download, url, output_path))
 

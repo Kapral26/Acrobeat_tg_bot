@@ -3,6 +3,8 @@ import logging
 from dishka import FromDishka, Provider, Scope, provide
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 
+from src.service.cliper.repository import TrackCliperRepo
+from src.service.cliper.service import TrackCliperService
 from src.service.downloader.repository import DownloaderRepo
 from src.service.downloader.service import DownloaderService
 from src.service.settings.config import Settings
@@ -46,8 +48,11 @@ class DatabaseProvider(Provider):
 
 class DownloaderProvider(Provider):
     @provide(scope=Scope.REQUEST)
-    async def get_repository(self) -> DownloaderRepo:
-        return DownloaderRepo()
+    async def get_repository(
+        self,
+        settings: FromDishka[Settings],
+    ) -> DownloaderRepo:
+        return DownloaderRepo(settings)
 
     @provide(scope=Scope.REQUEST)
     async def get_service(
@@ -57,3 +62,15 @@ class DownloaderProvider(Provider):
         logger: FromDishka[logging.Logger],
     ) -> DownloaderService:
         return DownloaderService(repository, settings, logger)
+
+
+class CliperProvider(Provider):
+    @provide(scope=Scope.REQUEST)
+    async def get_repo(self) -> TrackCliperRepo:
+        return TrackCliperRepo()
+
+    @provide(scope=Scope.REQUEST)
+    async def get_service(
+        self, repo: FromDishka[TrackCliperRepo]
+    ) -> TrackCliperService:
+        return TrackCliperService(repo)

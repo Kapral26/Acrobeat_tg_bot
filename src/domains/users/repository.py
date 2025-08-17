@@ -6,7 +6,7 @@ from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domains.users.models import User
-from src.domains.users.schemas import UsersCreateSchema
+from src.domains.users.schemas import UsersSchema
 
 
 @dataclass
@@ -18,7 +18,7 @@ class UserRepository:
     async def insert_new_user(
             self,
         session: AsyncSession,
-            user_data: UsersCreateSchema
+            user_data: UsersSchema
     ) -> int:
         stmnt = (
             insert(User)

@@ -5,7 +5,7 @@ from functools import wraps
 from aiogram import types
 
 from src.domains.users.repository import UserRepository
-from src.domains.users.schemas import UsersCreateSchema
+from src.domains.users.schemas import UsersSchema
 
 
 def extract_user_data(func):
@@ -14,7 +14,7 @@ def extract_user_data(func):
         # Общий метод извлечения данных пользователя
         user = event.from_user
 
-        user_data = UsersCreateSchema(
+        user_data = UsersSchema(
             id=user.id,
             username=user.username,
             first_name=user.first_name,
@@ -35,14 +35,14 @@ class UserService:
     async def register_user(
         self,
         event: types.TelegramObject,
-        user_data: UsersCreateSchema,
+        user_data: UsersSchema,
     ) -> None:
         self.logger.info("Registering new user")
         await self.user_repository.insert_new_user(user_data)
         self.logger.info(f"New user registered: {user_data}")
 
-    async def get_user_by_id(self, user_id: int) -> UsersCreateSchema:
+    async def get_user_by_id(self, user_id: int) -> UsersSchema:
         user = await self.user_repository.get_user_by_id(user_id)
         if user is None:
             raise ValueError("User not found") # TODO Реализовать исключение под эту проблему.
-        return UsersCreateSchema.model_validate(user)
+        return UsersSchema.model_validate(user)
