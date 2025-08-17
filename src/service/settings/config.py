@@ -46,11 +46,15 @@ class BotSettings(BaseSettings):
         env_prefix = "BOT_"
 
 
+audio_path = Path(__file__).parent.parent.absolute() / "audio"  # TODO Удалить
+
+
 class Settings(BaseSettings):
     postgres: PostgresSettings = Field(default_factory=PostgresSettings)
     minio: MinIOSettings = Field(default_factory=MinIOSettings)
     bot: BotSettings = Field(default_factory=BotSettings)
     debug: bool = Field(..., env="DEBUG")
+    path_audio: Path = audio_path
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

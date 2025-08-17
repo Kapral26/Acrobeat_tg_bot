@@ -14,8 +14,9 @@ async def track_list_kb(tracks: list[Track]) -> InlineKeyboardMarkup:
         builder.row(
             InlineKeyboardButton(
                 text=f"{track.title} [{track.minutes}:{track.seconds:02d}]",
-                url=track.webpage_url,
-            ),
+                # url=track.webpage_url,
+                callback_data=f"track_url:{track.webpage_url}",
+            )
         )
     builder.row(
         InlineKeyboardButton(

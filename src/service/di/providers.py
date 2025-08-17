@@ -53,5 +53,7 @@ class DownloaderProvider(Provider):
     async def get_service(
         self,
         repository: FromDishka[DownloaderRepo],
+        settings: FromDishka[Settings],
+        logger: FromDishka[logging.Logger],
     ) -> DownloaderService:
-        return DownloaderService(repository)
+        return DownloaderService(repository, settings, logger)
