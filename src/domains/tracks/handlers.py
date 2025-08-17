@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from pathlib import Path
 
 import aiofiles
 from aiogram import Bot, F, types
@@ -11,7 +12,9 @@ from dishka.integrations.aiogram import inject
 
 from src.domains.tracks import track_router
 from src.domains.tracks.keyboards import track_list_kb
+from src.service.cliper.service import concat_mp3, cut_audio_fragment
 from src.service.downloader.service import DownloaderService
+from src.service.settings.config import Settings
 
 
 class FindTrackStates(StatesGroup):
@@ -88,6 +91,7 @@ async def callback_query(
     bot: Bot,
     downloader: FromDishka[DownloaderService],
     logger: FromDishka[logging.Logger],
+    settings: FromDishka[Settings],
 ):
     await callback.answer("Ссылка получены, скачаю файл.")
     link = callback.data.split("track_url:")[-1]
@@ -125,8 +129,15 @@ async def callback_query(
     await loading_msg.delete()
     track_path = track_path_task.result()
     logger.debug(f"Downloading track '{track_path}'")
+
+    beep = settings.path_audio / "beep.mp3"
+    track = Path(f"{track_path}.mp3")
+
+    fragment = await cut_audio_fragment(track, start_sec=10, duration_sec=30)
+    final = await concat_mp3(beep, fragment)
+
     try:
-        async with aiofiles.open(f"{track_path}.mp3", "rb") as f:
+        async with aiofiles.open(f"{final}", "rb") as f:
             file_content = await f.read()
             await bot.send_audio(
                 chat_id=callback.message.chat.id,
