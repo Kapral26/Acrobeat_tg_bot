@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 
 from src.service.cliper.repository import TrackCliperRepo
 from src.service.cliper.service import TrackCliperService
-from src.service.downloader.repository import DownloaderRepo
+from src.service.downloader.repository import DownloaderRepoPinkamuz, DownloaderRepoYT
 from src.service.downloader.service import DownloaderService
 from src.service.settings.config import Settings
 
@@ -48,20 +48,32 @@ class DatabaseProvider(Provider):
 
 class DownloaderProvider(Provider):
     @provide(scope=Scope.REQUEST)
-    async def get_repository(
+    async def get_repository_yt(
         self,
         settings: FromDishka[Settings],
-    ) -> DownloaderRepo:
-        return DownloaderRepo(settings)
+    ) -> DownloaderRepoYT:
+        return DownloaderRepoYT(settings)
+
+    @provide(scope=Scope.REQUEST)
+    async def get_repository_pinkamuz(
+        self,
+        settings: FromDishka[Settings],
+    ) -> DownloaderRepoPinkamuz:
+        return DownloaderRepoPinkamuz(settings)
 
     @provide(scope=Scope.REQUEST)
     async def get_service(
         self,
-        repository: FromDishka[DownloaderRepo],
+        repository_yt: FromDishka[DownloaderRepoYT],
+        repository_pinkamuz: FromDishka[DownloaderRepoPinkamuz],
         settings: FromDishka[Settings],
         logger: FromDishka[logging.Logger],
     ) -> DownloaderService:
-        return DownloaderService(repository, settings, logger)
+        return DownloaderService(
+            repository=[repository_pinkamuz, repository_yt],
+            settings=settings,
+            logger=logger,
+        )
 
 
 class CliperProvider(Provider):
