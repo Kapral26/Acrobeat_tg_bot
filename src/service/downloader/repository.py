@@ -77,7 +77,7 @@ class DownloaderRepoPinkamuz(DownloaderAbstractRepo):
     settings: Settings
     cache_repository: DownloaderCacheRepo
     base_url: str = "https://pinkamuz.pro"
-    priority: int = 1000
+    priority: int = 0
 
     @property
     def alias(self) -> str:

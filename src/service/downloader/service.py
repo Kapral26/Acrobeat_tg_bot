@@ -6,7 +6,7 @@ from pathlib import Path
 from tempfile import gettempdir
 from typing import Any
 
-from aiogram.types import Message
+from aiogram import Bot
 
 from src.domains.tracks.schemas import DownloadTrackParams, RepoTracks, Track
 from src.service.downloader.abstarction import DownloaderAbstractRepo
@@ -26,7 +26,10 @@ class DownloaderService:
         return repo
 
     async def find_tracks_on_phrase(
-        self, phrase: str, message: Message
+        self,
+        phrase: str,
+        bot: Bot,
+        chat_id: int,
     ) -> RepoTracks | None:
         self.logger.debug(f"Searching for tracks on phrase '{phrase}'")
 
@@ -36,7 +39,8 @@ class DownloaderService:
                 founded_tracks = await processing_msg(
                     repo.find_tracks_on_phrase,
                     (phrase,),
-                    message=message,
+                    bot=bot,
+                    chat_id=chat_id,
                     spinner_msg=f"🔎Поиск в источнике {_idx + 1}/{len(self.repository)}",
                 )
                 if founded_tracks:
@@ -50,7 +54,7 @@ class DownloaderService:
         return None
 
     async def download_track(
-        self, download_params: DownloadTrackParams, message: Message
+        self, download_params: DownloadTrackParams, bot: Bot, chat_id: int
     ):
         self.logger.debug(
             f"Downloading track '{download_params.url}', repo: '{download_params.repo_alias}'"
@@ -64,7 +68,8 @@ class DownloaderService:
         await processing_msg(
             repo.download_track,
             (cache_url_track, track_path),
-            message=message,
+            bot=bot,
+            chat_id=chat_id,
             spinner_msg="🛬 Загрузка трека на сервер",
         )
 
@@ -72,7 +77,7 @@ class DownloaderService:
 
 
 async def processing_msg(
-    func: callable, args: tuple, message: Message, spinner_msg: str
+    func: callable, args: tuple, bot: Bot, chat_id: int, spinner_msg: str
 ) -> Any:  # noqa: ANN401
     """Метод для отрисовки анимации выполнения действия."""
     spinner = [
@@ -88,9 +93,8 @@ async def processing_msg(
         f"{spinner_msg} ⠏",
     ]
     index = 0
-    loading_msg = await message.answer(spinner[index])
+    loading_msg = await bot.send_message(chat_id=chat_id, text=spinner[index])
     task = asyncio.create_task(func(*args))
-    # Анимация спиннера до завершения задачи
     while not task.done():
         index = (index + 1) % len(spinner)
         await loading_msg.edit_text(spinner[index])
