@@ -8,20 +8,26 @@ from typing import Any
 
 from aiogram.types import Message
 
-from src.domains.tracks.schemas import Track
+from src.domains.tracks.schemas import DownloadTrackParams, RepoTracks, Track
 from src.service.downloader.abstarction import DownloaderAbstractRepo
+from src.service.downloader.cach_repository import DownloaderCacheRepo
 from src.service.settings.config import Settings
 
 
 @dataclass
 class DownloaderService:
     repository: list[DownloaderAbstractRepo]
+    cache_repository: DownloaderCacheRepo
     settings: Settings
     logger: logging.Logger
 
+    def _get_repo(self, repo_alias: str) -> DownloaderAbstractRepo:
+        repo = next(x for x in self.repository if x.alias == repo_alias)
+        return repo
+
     async def find_tracks_on_phrase(
         self, phrase: str, message: Message
-    ) -> list[Track] | None:
+    ) -> RepoTracks | None:
         self.logger.debug(f"Searching for tracks on phrase '{phrase}'")
 
         self.repository.sort(key=lambda x: x.priority)
@@ -34,19 +40,30 @@ class DownloaderService:
                     spinner_msg=f"🔎Поиск в источнике {_idx + 1}/{len(self.repository)}",
                 )
                 if founded_tracks:
-                    return [Track.model_validate(x) for x in founded_tracks]
+                    return RepoTracks(
+                        tracks=[Track.model_validate(x) for x in founded_tracks],
+                        repo_alias=repo.alias,
+                    )
             except Exception as e:
-                print(f"Ошибка в {repo}: {e}")
+                self.logger.exception(f"Ошибка в {repo}: {e}")
                 continue
         return None
 
-    async def download_track(self, url: str, message: Message):
-        self.logger.debug(f"Downloading track '{url}'")
+    async def download_track(
+        self, download_params: DownloadTrackParams, message: Message
+    ):
+        self.logger.debug(
+            f"Downloading track '{download_params.url}', repo: '{download_params.repo_alias}'"
+        )
         track_path = Path(gettempdir()) / f"{uuid.uuid4()}.mp3"
 
+        repo = self._get_repo(download_params.repo_alias)
+
+        cache_url_track = await self.cache_repository.get_track_url(download_params.url)
+
         await processing_msg(
-            self.repository.download_track,
-            (url, track_path),
+            repo.download_track,
+            (cache_url_track, track_path),
             message=message,
             spinner_msg="🛬 Загрузка трека на сервер",
         )

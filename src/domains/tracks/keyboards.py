@@ -1,21 +1,25 @@
+
 from aiogram.types import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
 )
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from src.domains.tracks.schemas import Track
+from src.domains.tracks.schemas import DownloadTrackParams, RepoTracks
 
 
-async def track_list_kb(tracks: list[Track]) -> InlineKeyboardMarkup:
+async def track_list_kb(repo_result: RepoTracks) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 
-    for track in tracks:
+    for track in repo_result.tracks:
+        callback_params = DownloadTrackParams(
+                url=track.webpage_url,
+                repo_alias=repo_result.repo_alias
+        )
         builder.row(
             InlineKeyboardButton(
                 text=f"{track.title} [{track.minutes}:{track.seconds:02d}]",
-                # url=track.webpage_url,
-                callback_data=f"track_url:{track.webpage_url}",
+                callback_data=f"d_p:{callback_params.model_dump_json()}",
             )
         )
     builder.row(

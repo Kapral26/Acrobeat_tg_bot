@@ -6,6 +6,7 @@ from src.service.di.providers import (
     DatabaseProvider,
     DownloaderProvider,
     LoggerProvider,
+    RedisProvider,
 )
 
 
@@ -14,6 +15,7 @@ def create_container() -> AsyncContainer:
         LoggerProvider(),
         ConfigProvider(),
         DatabaseProvider(),
+        RedisProvider(),
         DownloaderProvider(),
         CliperProvider(),
     ]

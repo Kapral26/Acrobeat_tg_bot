@@ -1,10 +1,12 @@
 import logging
 
 from dishka import FromDishka, Provider, Scope, provide
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 
 from src.service.cliper.repository import TrackCliperRepo
 from src.service.cliper.service import TrackCliperService
+from src.service.downloader.cach_repository import DownloaderCacheRepo
 from src.service.downloader.repository import DownloaderRepoPinkamuz, DownloaderRepoYT
 from src.service.downloader.service import DownloaderService
 from src.service.settings.config import Settings
@@ -13,7 +15,7 @@ from src.service.settings.config import Settings
 class LoggerProvider(Provider):
     @provide(scope=Scope.APP)
     async def get_logger(self) -> logging.Logger:
-        return logging.getLogger("app_logger")
+        return logging.getLogger("acrobeat_bot")
 
 
 class ConfigProvider(Provider):
@@ -46,20 +48,40 @@ class DatabaseProvider(Provider):
         return async_sessionmaker(engine)
 
 
+class RedisProvider(Provider):
+    @provide(scope=Scope.REQUEST)
+    async def get_redis_client(
+        self,
+        settings: FromDishka[Settings],
+    ) -> Redis:
+        return Redis(
+            host=settings.redis.host, port=settings.redis.port, db=settings.redis.db
+        )
+
+
 class DownloaderProvider(Provider):
+    @provide(scope=Scope.REQUEST)
+    async def get_cache_repository(
+        self,
+        redis_client: FromDishka[Redis],
+    ) -> DownloaderCacheRepo:
+        return DownloaderCacheRepo(redis_client=redis_client)
+
     @provide(scope=Scope.REQUEST)
     async def get_repository_yt(
         self,
         settings: FromDishka[Settings],
+        cache_repository: FromDishka[DownloaderCacheRepo],
     ) -> DownloaderRepoYT:
-        return DownloaderRepoYT(settings)
+        return DownloaderRepoYT(settings, cache_repository)
 
     @provide(scope=Scope.REQUEST)
     async def get_repository_pinkamuz(
         self,
         settings: FromDishka[Settings],
+        cache_repository: FromDishka[DownloaderCacheRepo],
     ) -> DownloaderRepoPinkamuz:
-        return DownloaderRepoPinkamuz(settings)
+        return DownloaderRepoPinkamuz(settings, cache_repository)
 
     @provide(scope=Scope.REQUEST)
     async def get_service(
@@ -67,10 +89,12 @@ class DownloaderProvider(Provider):
         repository_yt: FromDishka[DownloaderRepoYT],
         repository_pinkamuz: FromDishka[DownloaderRepoPinkamuz],
         settings: FromDishka[Settings],
+        cache_repository: FromDishka[DownloaderCacheRepo],
         logger: FromDishka[logging.Logger],
     ) -> DownloaderService:
         return DownloaderService(
             repository=[repository_pinkamuz, repository_yt],
+            cache_repository=cache_repository,
             settings=settings,
             logger=logger,
         )

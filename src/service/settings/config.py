@@ -39,6 +39,15 @@ class MinIOSettings(BaseSettings):
         env_prefix = "MINIO_"
 
 
+class RedisSettings(BaseSettings):
+    host: str = Field(..., env="REDIS_HOST")
+    port: int = Field(..., env="REDIS_PORT")
+    db: int = Field(..., env="REDIS_DB")
+
+    class Config:
+        env_prefix = "REDIS_"
+
+
 class BotSettings(BaseSettings):
     token: SecretStr = Field(..., env="BOT_TOKEN")
 
@@ -50,6 +59,7 @@ class Settings(BaseSettings):
     postgres: PostgresSettings = Field(default_factory=PostgresSettings)
     minio: MinIOSettings = Field(default_factory=MinIOSettings)
     bot: BotSettings = Field(default_factory=BotSettings)
+    redis: RedisSettings = Field(default_factory=RedisSettings)
     debug: bool = Field(..., env="DEBUG")
 
     def __init__(self, **kwargs):
@@ -57,6 +67,7 @@ class Settings(BaseSettings):
         setup_file_logger(
             log_file="acrobeat_bot.log",
             log_level=logging.INFO if not self.debug else logging.DEBUG,
+            logger_name="acrobeat_bot",
         )
 
     model_config = {

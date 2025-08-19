@@ -17,13 +17,19 @@ from bs4 import BeautifulSoup
 from yt_dlp import YoutubeDL
 
 from src.service.downloader.abstarction import DownloaderAbstractRepo
+from src.service.downloader.cach_repository import DownloaderCacheRepo
 from src.service.settings.config import Settings
 
 
 @dataclass
 class DownloaderRepoYT(DownloaderAbstractRepo):
     settings: Settings
+    cache_repository: DownloaderCacheRepo
     priority: int = 10
+
+    @property
+    def alias(self) -> str:
+        return "yt"
 
     def _download(self, url: str, output_path: Path):
         ydl_opts = {
@@ -60,6 +66,8 @@ class DownloaderRepoYT(DownloaderAbstractRepo):
     async def find_tracks_on_phrase(self, query: str):
         loop = asyncio.get_event_loop()
         results = await loop.run_in_executor(None, partial(self._search_track, query))
+        async for item in results:
+            item["webpage_url"] = await self.cache_repository.set_track_url(item["webpage_url"])
 
         return results
 
@@ -67,8 +75,13 @@ class DownloaderRepoYT(DownloaderAbstractRepo):
 @dataclass
 class DownloaderRepoPinkamuz(DownloaderAbstractRepo):
     settings: Settings
+    cache_repository: DownloaderCacheRepo
     base_url: str = "https://pinkamuz.pro"
     priority: int = 0
+
+    @property
+    def alias(self) -> str:
+        return "pin"
 
     @property
     def headers(self):
@@ -119,11 +132,11 @@ class DownloaderRepoPinkamuz(DownloaderAbstractRepo):
 
                 href = download_tag.get("href")
                 full_url = urljoin("https://track.pinkamuz.pro", href)
-
+                url_cache_id = await self.cache_repository.set_track_url(full_url)
                 results.append(
                     {
                         "title": title,
-                        "webpage_url": full_url,
+                        "webpage_url": url_cache_id,
                         "duration": duration,
                     }
                 )

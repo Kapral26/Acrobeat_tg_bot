@@ -1,6 +1,4 @@
 import logging
-from collections.abc import Callable
-from functools import wraps
 from pathlib import Path
 
 
@@ -28,33 +26,3 @@ def setup_file_logger(
         logger.addHandler(handler)
 
     return logger
-
-
-def log_function(level: int = logging.INFO, logger_name: str = "app_logger"):
-    """
-    Декоратор для логирования вызовов обычных функций (не методов класса).
-    Логирует вход, выход и ошибки функции.
-    """
-
-    def decorator(func: Callable):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            logger = logging.getLogger(logger_name)
-            logger.log(
-                level,
-                f"Вызов функции {func.__qualname__} с args={args}, kwargs={kwargs}",
-            )
-            try:
-                result = func(*args, **kwargs)
-                logger.log(
-                    level,
-                    f"Функция {func.__qualname__} успешно завершена, результат: {result!r}",
-                )
-
-            except Exception as e:
-                logger.exception(f"Ошибка в функции {func.__qualname__}: {e}")
-                raise
-
-        return wrapper
-
-    return decorator

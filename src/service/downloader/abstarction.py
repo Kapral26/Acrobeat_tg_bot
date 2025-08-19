@@ -3,6 +3,12 @@ from pathlib import Path
 
 
 class DownloaderAbstractRepo(ABC):
+
+    @property
+    @abstractmethod
+    def alias(self) -> str:
+        raise NotImplementedError
+
     @abstractmethod
     def _download(self, url: str, output_path: Path) -> None:
         raise NotImplementedError
