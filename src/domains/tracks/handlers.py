@@ -11,7 +11,11 @@ from dishka.integrations.aiogram import inject
 
 from src.domains.tracks import track_router
 from src.domains.tracks.filters import YouTubeLinkFilter
-from src.domains.tracks.keyboards import track_list_kb
+from src.domains.tracks.keyboards import (
+    get_search_kb,
+    track_list_kb,
+)
+from src.domains.tracks.schemas import DownloadTrackParams, DownloadYTParams
 from src.service.cliper.service import TrackCliperService
 from src.service.downloader.service import DownloaderService
 
@@ -29,30 +33,35 @@ async def search_tracks(
     state: FSMContext,
 ):
     await callback.answer()
-    await callback.message.edit_text("📝 Введите название песни, исполнителя.", )
+    text_search_track = "📝 Введите название песни, исполнителя."
+    if callback.message.text:
+        await callback.message.edit_text(text_search_track)
+    else:
+        await callback.message.answer(text_search_track)
     await state.set_state(FindTrackStates.WAITING_FOR_PHRASE)
-    await asyncio.sleep(15)
-    await callback.message.delete()
 
 
 @track_router.message(FindTrackStates.WAITING_FOR_PHRASE)
 @inject
 async def handle_preview_search_track(
     message: types.Message,
+    bot: Bot,
     state: FSMContext,
     downloader: FromDishka[DownloaderService],
 ):
-    tasks = await downloader.find_tracks_on_phrase(message.text, message)
+    find_tracks = await downloader.find_tracks_on_phrase(
+        phrase=message.text, bot=bot, chat_id=message.chat.id
+    )
 
     await message.answer(
         "Выберите подходящую песню:",
-        reply_markup=await track_list_kb(tasks),
+        reply_markup=await track_list_kb(find_tracks),
     )
 
     await state.clear()
 
 
-@track_router.callback_query(F.data.startswith("track_url:"))
+@track_router.callback_query(F.data.startswith("d_p:"))
 @inject
 async def callback_query(
     callback: CallbackQuery,
@@ -62,9 +71,12 @@ async def callback_query(
     cliper_service: FromDishka[TrackCliperService],
 ):
     await callback.answer("Ссылка получены, скачаю файл.")
-    link = callback.data.split("track_url:")[-1]
+    download_params = callback.data.split("d_p:")[-1]
     await callback.message.delete()
-    if not link:
+
+    download_params = DownloadTrackParams.model_validate_json(download_params)
+
+    if not download_params:
         await callback.answer("Не удалось получить ссылку.")
         return
 
@@ -73,7 +85,7 @@ async def callback_query(
         message=callback.message,
         downloader_service=downloader_service,
         cliper_service=cliper_service,
-        link=link,
+        download_params=download_params,
         logger=logger,
     )
 
@@ -92,7 +104,9 @@ async def handle_youtube_link(
         message=message,
         downloader_service=downloader_service,
         cliper_service=cliper_service,
-        link=message.text,
+        download_params=DownloadYTParams(
+            url=message.text,
+        ),
         logger=logger,
     )
 
@@ -103,19 +117,26 @@ async def download_and_cliper(
     message: Message,
     downloader_service: DownloaderService,
     cliper_service: TrackCliperService,
-    link: str,
+    download_params: DownloadTrackParams,
     logger: logging.Logger,
 ):
-    track_path = await downloader_service.download_track(link, message)
-    clipped_track = await cliper_service.get_prepared_track(track_path, message)
+    chat_id = message.chat.id
+    track_path = await downloader_service.download_track(
+        download_params=download_params, bot=bot, chat_id=chat_id
+    )
+    clipped_track = await cliper_service.get_prepared_track(
+        full_tack_path=track_path, bot=bot, chat_id=chat_id
+    )
     try:
         async with aiofiles.open(f"{clipped_track}", "rb") as f:
             file_content = await f.read()
-            await bot.send_audio(
-                chat_id=message.chat.id,
-                audio=types.input_file.BufferedInputFile(
+            await bot.send_document(
+                chat_id=chat_id,
+                document=types.input_file.BufferedInputFile(
                     file_content, filename="track.mp3"
                 ),
+                caption="Скачайте трек",
+                reply_markup=await get_search_kb(),
             )
     except Exception as e:
         logger.error(e)

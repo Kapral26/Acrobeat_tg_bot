@@ -19,3 +19,16 @@ class Track(BaseModel):
             values["minutes"] = duration // 60
             values["seconds"] = duration % 60
         return values
+
+
+class RepoTracks(BaseModel):
+    tracks: list[Track]
+    repo_alias: str
+
+
+class DownloadTrackParams(BaseModel):
+    repo_alias: str
+    url: str
+
+class DownloadYTParams(DownloadTrackParams):
+    repo_alias: str = "yt"

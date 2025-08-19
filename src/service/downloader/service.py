@@ -6,43 +6,70 @@ from pathlib import Path
 from tempfile import gettempdir
 from typing import Any
 
-from aiogram.types import Message
-from sqlalchemy.exc import NoResultFound
+from aiogram import Bot
 
-from src.domains.tracks.schemas import Track
-from src.service.downloader.repository import DownloaderRepo
+from src.domains.tracks.schemas import DownloadTrackParams, RepoTracks, Track
+from src.service.downloader.abstarction import DownloaderAbstractRepo
+from src.service.downloader.cach_repository import DownloaderCacheRepo
 from src.service.settings.config import Settings
 
 
 @dataclass
 class DownloaderService:
-    repository: DownloaderRepo
+    repository: list[DownloaderAbstractRepo]
+    cache_repository: DownloaderCacheRepo
     settings: Settings
     logger: logging.Logger
 
-    async def find_tracks_on_phrase(self, phrase: str, message: Message) -> list[Track]:
+    def _get_repo(self, repo_alias: str) -> DownloaderAbstractRepo:
+        repo = next(x for x in self.repository if x.alias == repo_alias)
+        return repo
+
+    async def find_tracks_on_phrase(
+        self,
+        phrase: str,
+        bot: Bot,
+        chat_id: int,
+    ) -> RepoTracks | None:
         self.logger.debug(f"Searching for tracks on phrase '{phrase}'")
 
-        founded_tracks = await processing_msg(
-            self.repository.find_tracks_on_phrase,
-            (phrase,),
-            message=message,
-            spinner_msg="🔎Поиск",
+        self.repository.sort(key=lambda x: x.priority)
+        for _idx, repo in enumerate(self.repository):
+            try:
+                founded_tracks = await processing_msg(
+                    repo.find_tracks_on_phrase,
+                    (phrase,),
+                    bot=bot,
+                    chat_id=chat_id,
+                    spinner_msg=f"🔎Поиск в источнике {_idx + 1}/{len(self.repository)}",
+                )
+                if founded_tracks:
+                    return RepoTracks(
+                        tracks=[Track.model_validate(x) for x in founded_tracks],
+                        repo_alias=repo.alias,
+                    )
+            except Exception as e:
+                self.logger.exception(f"Ошибка в {repo}: {e}")
+                continue
+        return None
+
+    async def download_track(
+        self, download_params: DownloadTrackParams, bot: Bot, chat_id: int
+    ):
+        self.logger.debug(
+            f"Downloading track '{download_params.url}', repo: '{download_params.repo_alias}'"
         )
-
-        if not founded_tracks:
-            raise NoResultFound
-
-        return [Track.model_validate(x) for x in founded_tracks]
-
-    async def download_track(self, url: str, message: Message):
-        self.logger.debug(f"Downloading track '{url}'")
         track_path = Path(gettempdir()) / f"{uuid.uuid4()}.mp3"
 
+        repo = self._get_repo(download_params.repo_alias)
+
+        cache_url_track = await self.cache_repository.get_track_url(download_params.url)
+
         await processing_msg(
-            self.repository.download_track,
-            (url, track_path),
-            message=message,
+            repo.download_track,
+            (cache_url_track, track_path),
+            bot=bot,
+            chat_id=chat_id,
             spinner_msg="🛬 Загрузка трека на сервер",
         )
 
@@ -50,7 +77,7 @@ class DownloaderService:
 
 
 async def processing_msg(
-    func: callable, args: tuple, message: Message, spinner_msg: str
+    func: callable, args: tuple, bot: Bot, chat_id: int, spinner_msg: str
 ) -> Any:  # noqa: ANN401
     """Метод для отрисовки анимации выполнения действия."""
     spinner = [
@@ -66,9 +93,8 @@ async def processing_msg(
         f"{spinner_msg} ⠏",
     ]
     index = 0
-    loading_msg = await message.answer(spinner[index])
+    loading_msg = await bot.send_message(chat_id=chat_id, text=spinner[index])
     task = asyncio.create_task(func(*args))
-    # Анимация спиннера до завершения задачи
     while not task.done():
         index = (index + 1) % len(spinner)
         await loading_msg.edit_text(spinner[index])

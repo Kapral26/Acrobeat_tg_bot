@@ -26,12 +26,33 @@ services:
     container_name: minio
     env_file:
       - .env
+    networks:
+      - my_app_network
     ports:
       - "9000:9000"  # S3 API
       - "9001:9001"  # Web UI
     command: server /data --console-address ":9001"
     volumes:
       - ./minio_data:/data
+
+  cache:
+    image: redis:7.2.4-alpine
+    container_name: redis
+    env_file:
+      - .env
+    ports:
+      - "6379:6379"
+    networks:
+      - my_app_network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
 networks:
   my_app_network:
