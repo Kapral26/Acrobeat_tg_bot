@@ -66,7 +66,7 @@ class DownloaderRepoYT(DownloaderAbstractRepo):
     async def find_tracks_on_phrase(self, query: str):
         loop = asyncio.get_event_loop()
         results = await loop.run_in_executor(None, partial(self._search_track, query))
-        async for item in results:
+        for item in results:
             item["webpage_url"] = await self.cache_repository.set_track_url(item["webpage_url"])
 
         return results
@@ -77,7 +77,7 @@ class DownloaderRepoPinkamuz(DownloaderAbstractRepo):
     settings: Settings
     cache_repository: DownloaderCacheRepo
     base_url: str = "https://pinkamuz.pro"
-    priority: int = 0
+    priority: int = 1000
 
     @property
     def alias(self) -> str:
