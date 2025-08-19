@@ -7,6 +7,7 @@ from src.service.di.providers import (
     DownloaderProvider,
     LoggerProvider,
     RedisProvider,
+    UserProvider,
 )
 
 
@@ -18,6 +19,7 @@ def create_container() -> AsyncContainer:
         RedisProvider(),
         DownloaderProvider(),
         CliperProvider(),
+        UserProvider(),
     ]
 
     return make_async_container(*containers)

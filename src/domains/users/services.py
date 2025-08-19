@@ -37,12 +37,16 @@ class UserService:
         event: types.TelegramObject,
         user_data: UsersSchema,
     ) -> None:
+        if await self.user_repository.get_user_by_id(user_data.id):
+            self.logger.info(f"User {user_data.id} already exists")
+            return
+
         self.logger.info("Registering new user")
         await self.user_repository.insert_new_user(user_data)
         self.logger.info(f"New user registered: {user_data}")
 
-    async def get_user_by_id(self, user_id: int) -> UsersSchema:
+    async def get_user_by_id(self, user_id: int) -> UsersSchema | None:
         user = await self.user_repository.get_user_by_id(user_id)
         if user is None:
-            raise ValueError("User not found") # TODO Реализовать исключение под эту проблему.
+            return None
         return UsersSchema.model_validate(user)

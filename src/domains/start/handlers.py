@@ -1,9 +1,11 @@
 from aiogram import Bot, types
 from aiogram.filters import Command
+from dishka import FromDishka
 from dishka.integrations.aiogram import inject
 
 from src.domains.start import start_router
 from src.domains.start.keyboards import get_start_inline_keyboard
+from src.domains.users.services import UserService
 
 
 @start_router.message(Command("start"))
@@ -11,6 +13,7 @@ from src.domains.start.keyboards import get_start_inline_keyboard
 async def start_command(
     message: types.Message,
     bot: Bot,
+    user_service: FromDishka[UserService],
 ):
     """Обработчик команды /start."""
     await message.answer(
@@ -33,3 +36,4 @@ async def start_command(
 """,
         reply_markup=await get_start_inline_keyboard(),
     )
+    await user_service.register_user(message)
