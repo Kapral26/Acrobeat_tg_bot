@@ -11,7 +11,6 @@ async def get_start_inline_keyboard() -> InlineKeyboardMarkup:
         InlineKeyboardButton(text="История поиска", callback_data="search_history"),
     )
     builder.row(
-        InlineKeyboardButton(text="Найти новую песню", callback_data="find_track"),
+        InlineKeyboardButton(text="Найти новую песню", callback_data="set_track_name"),
     )
-
     return builder.as_markup()

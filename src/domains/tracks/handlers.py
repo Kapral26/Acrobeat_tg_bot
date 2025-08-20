@@ -21,6 +21,7 @@ from src.service.downloader.service import DownloaderService
 
 class FindTrackStates(StatesGroup):
     WAITING_FOR_PHRASE = State()
+    TRACK_NAME_CONFIRMED = State()
 
 
 @track_router.callback_query(
@@ -57,14 +58,13 @@ async def handle_preview_search_track(
         reply_markup=await track_list_kb(find_tracks),
     )
 
-    await state.clear()
-
 
 @track_router.callback_query(F.data.startswith("d_p:"))
 @inject
 async def callback_query(
     callback: CallbackQuery,
     bot: Bot,
+    state: FSMContext,
     logger: FromDishka[logging.Logger],
     downloader_service: FromDishka[DownloaderService],
     cliper_service: FromDishka[TrackCliperService],
@@ -82,6 +82,7 @@ async def callback_query(
     await download_and_cliper(
         bot=bot,
         message=callback.message,
+        state=state,
         downloader_service=downloader_service,
         cliper_service=cliper_service,
         download_params=download_params,
@@ -94,6 +95,7 @@ async def callback_query(
 async def handle_youtube_link(
     message: Message,
     bot: Bot,
+    state: FSMContext,
     logger: FromDishka[logging.Logger],
     downloader_service: FromDishka[DownloaderService],
     cliper_service: FromDishka[TrackCliperService],
@@ -101,6 +103,7 @@ async def handle_youtube_link(
     await download_and_cliper(
         bot=bot,
         message=message,
+        state=state,
         downloader_service=downloader_service,
         cliper_service=cliper_service,
         download_params=DownloadYTParams(
@@ -114,11 +117,14 @@ async def handle_youtube_link(
 async def download_and_cliper(
     bot: Bot,
     message: Message,
+    state: FSMContext,
     downloader_service: DownloaderService,
     cliper_service: TrackCliperService,
     download_params: DownloadTrackParams,
     logger: logging.Logger,
 ):
+    data = await state.get_data()
+
     chat_id = message.chat.id
     track_path = await downloader_service.download_track(
         download_params=download_params, bot=bot, chat_id=chat_id
@@ -132,7 +138,7 @@ async def download_and_cliper(
             await bot.send_document(
                 chat_id=chat_id,
                 document=types.input_file.BufferedInputFile(
-                    file_content, filename="track.mp3"
+                    file_content, filename=f"{data['track_name']}.mp3"
                 ),
                 caption="Скачайте трек",
                 reply_markup=await get_search_kb(),
