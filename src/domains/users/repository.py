@@ -54,3 +54,10 @@ class UserRepository:
             stmt = select(User).where(User.username == username)
             result = await session.execute(stmt)
             return result.scalars().first()
+
+    async def get_user_tracks(self, user_id: int):
+        async with self.session_factory() as session:
+            result = await session.get(User, user_id)
+            if result:
+                return result.track_names
+            return []

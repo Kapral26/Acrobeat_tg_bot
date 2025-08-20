@@ -1,6 +1,8 @@
 from aiogram.types import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+from src.domains.tracks.track_name.schemas import TrackPartSchema
+
 
 def back_track_name_button():
     builder = InlineKeyboardBuilder()
@@ -10,7 +12,6 @@ def back_track_name_button():
     return builder.as_markup()
 
 
-# Клавиатура для редактирования трека
 def edit_track_name_keyboard():
     builder = InlineKeyboardBuilder()
     builder.row(
@@ -45,5 +46,23 @@ def discipline_keyboard():
     builder.row(
         InlineKeyboardButton(text="➕ Другое", callback_data="discipline:custom"),
         InlineKeyboardButton(text="⬅️ Назад", callback_data="go_back_track_name_item"),
+    )
+    return builder.as_markup()
+
+
+def user_track_parts_keyboard(user_track_parts: list[TrackPartSchema] | None):
+    builder = InlineKeyboardBuilder()
+
+    for item in user_track_parts:
+        builder.row(
+            InlineKeyboardButton(
+                text=item.track_part, callback_data=f"track_part:{item.id}"
+            )
+        )
+
+    builder.row(
+        InlineKeyboardButton(
+            text="Добавить вручную", callback_data="hand_input_track_part"
+        ),
     )
     return builder.as_markup()

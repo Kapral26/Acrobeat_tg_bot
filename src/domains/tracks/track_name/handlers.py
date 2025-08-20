@@ -5,6 +5,8 @@ from aiogram import F
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message
+from dishka import FromDishka
+from dishka.integrations.aiogram import inject
 
 from src.domains.tracks.handlers import search_tracks
 from src.domains.tracks.track_name import track_name_router
@@ -12,7 +14,9 @@ from src.domains.tracks.track_name.keyboards import (
     back_track_name_button,
     discipline_keyboard,
     edit_track_name_keyboard,
+    user_track_parts_keyboard,
 )
+from src.domains.users.services import UserService
 
 
 class TrackNameStates(StatesGroup):
@@ -33,6 +37,36 @@ class TrackNameStates(StatesGroup):
 
 
 @track_name_router.callback_query(F.data == "set_track_name")
+@inject
+async def try_choose_track_name(
+    callback: CallbackQuery, state: FSMContext, user_service: FromDishka[UserService]
+):
+    await callback.answer()
+
+    user_track_parts = await user_service.get_user_tracks(callback.from_user.id)
+
+    await callback.message.edit_text(
+        """Вы можете выбрать название из списка или ввести новый вариант""",
+        reply_markup=await user_track_parts_keyboard(user_track_parts),
+    )
+
+
+@track_name_router.callback_query(F.data.startswith("track_part:"))
+async def set_track_part(callback: CallbackQuery, state: FSMContext) -> None:
+    await callback.answer()
+
+    second_name, first_name, year_of_birth = callback.message.text.split("_")
+
+    await state.update_data(first_name=second_name.upper())
+    await state.update_data(second_name=second_name.capitalize())
+    await state.update_data(year_of_birth=second_name)
+    await state.set_state(TrackNameStates.DISCIPLINE)
+    await callback.message.answer(
+        "Выберите спортивную дисциплину", reply_markup=discipline_keyboard()
+    )
+
+
+@track_name_router.callback_query(F.data == "hand_input_track_part")
 async def set_second_name(callback: CallbackQuery, state: FSMContext) -> None:
     """
     Обработчик нажатия кнопки "Установить имя трека".
@@ -63,7 +97,7 @@ async def set_first_name(message: Message, state: FSMContext) -> None:
     if not second_name or not second_name.isalpha():
         await message.answer("Пожалуйста, введите фамилию только из букв.")
         return
-    await state.update_data(second_name=second_name)
+    await state.update_data(second_name=second_name.capitalize())
     await state.set_state(TrackNameStates.FIRST_NAME)
     await message.answer("Введите инициалы", reply_markup=back_track_name_button())
 
@@ -84,7 +118,7 @@ async def set_year_of_birth(message: Message, state: FSMContext) -> None:
     if not re.fullmatch(r"^[А-ЯЁ][А-ЯЁ]$", first_name):
         await message.answer("Пожалуйста, введите инициалы в формате: АА")
         return
-    await state.update_data(first_name=first_name)
+    await state.update_data(first_name=first_name.upper())
     await state.set_state(TrackNameStates.YEAR_OF_BIRTH)
     await message.answer("Введите год рождения", reply_markup=back_track_name_button())
 

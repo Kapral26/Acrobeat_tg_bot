@@ -4,6 +4,7 @@ from functools import wraps
 
 from aiogram import types
 
+from src.domains.tracks.track_name.schemas import TrackPartSchema
 from src.domains.users.repository import UserRepository
 from src.domains.users.schemas import UsersSchema
 
@@ -50,3 +51,9 @@ class UserService:
         if user is None:
             return None
         return UsersSchema.model_validate(user)
+
+    async def get_user_tracks(self, user_id: int) -> list[TrackPartSchema] | None:
+        user_tracks = await self.user_repository.get_user_tracks(user_id)
+        if user_tracks is None:
+            return None
+        return [TrackPartSchema.model_validate(x) for x in user_tracks]
