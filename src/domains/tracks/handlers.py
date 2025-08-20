@@ -11,6 +11,7 @@ from dishka.integrations.aiogram import inject
 from src.domains.tracks import track_router
 from src.domains.tracks.filters import YouTubeLinkFilter
 from src.domains.tracks.keyboards import (
+    break_processing,
     get_search_kb,
     track_list_kb,
 )
@@ -35,9 +36,13 @@ async def search_tracks(
     await callback.answer()
     text_search_track = "📝 Введите название песни, исполнителя."
     if callback.message.text:
-        await callback.message.edit_text(text_search_track)
+        await callback.message.edit_text(
+            text_search_track, reply_markup=await break_processing()
+        )
     else:
-        await callback.message.answer(text_search_track)
+        await callback.message.answer(
+            text_search_track, reply_markup=await break_processing()
+        )
     await state.set_state(FindTrackStates.WAITING_FOR_PHRASE)
 
 

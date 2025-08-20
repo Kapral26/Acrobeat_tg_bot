@@ -1,3 +1,6 @@
+import re
+from datetime import datetime
+
 from aiogram import F
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -56,12 +59,18 @@ async def set_first_name(message: Message, state: FSMContext) -> None:
         message (Message): Сообщение от пользователя.
         state (FSMContext): Контекст машины состояний.
     """
-    await state.update_data(second_name=message.text)
+    second_name = message.text.strip()
+    if not second_name or not second_name.isalpha():
+        await message.answer("Пожалуйста, введите фамилию только из букв.")
+        return
+    await state.update_data(second_name=second_name)
     await state.set_state(TrackNameStates.FIRST_NAME)
     await message.answer("Введите инициалы", reply_markup=back_track_name_button())
 
 
-@track_name_router.message(TrackNameStates.FIRST_NAME)
+@track_name_router.message(
+    TrackNameStates.FIRST_NAME,
+)
 async def set_year_of_birth(message: Message, state: FSMContext) -> None:
     """
     Обработчик ввода инициалов.
@@ -71,13 +80,31 @@ async def set_year_of_birth(message: Message, state: FSMContext) -> None:
         message (Message): Сообщение от пользователя.
         state (FSMContext): Контекст машины состояний.
     """
-    await state.update_data(first_name=message.text)
+    first_name = message.text.strip()
+    if not re.fullmatch(r"^[А-ЯЁ][А-ЯЁ]$", first_name):
+        await message.answer("Пожалуйста, введите инициалы в формате: АА")
+        return
+    await state.update_data(first_name=first_name)
     await state.set_state(TrackNameStates.YEAR_OF_BIRTH)
     await message.answer("Введите год рождения", reply_markup=back_track_name_button())
 
 
 @track_name_router.message(TrackNameStates.YEAR_OF_BIRTH)
 async def choose_discipline(message: Message, state: FSMContext) -> None:
+    year_of_birth = message.text.strip()
+
+    if not year_of_birth.isdigit():
+        await message.answer("Пожалуйста, введите год рождения в формате: YYYY")
+        return
+
+    year = int(year_of_birth)
+    current_year = datetime.now().year
+
+    # Проверка: год в допустимом диапазоне
+    if not (1970 <= year < current_year):
+        await message.answer(f"Год рождения должен быть от 1970 до {current_year - 1}")
+        return
+
     await state.update_data(year_of_birth=message.text)
     await state.set_state(TrackNameStates.DISCIPLINE)
     await message.answer(
@@ -90,7 +117,9 @@ async def process_discipline(callback: CallbackQuery, state: FSMContext) -> None
     value = callback.data.split(":", 1)[1]
 
     if value == "custom":
-        await state.set_state(TrackNameStates.CUSTOM_DISCIPLINE)
+        await state.set_state(
+            TrackNameStates.CUSTOM_DISCIPLINE,
+        )
         await callback.message.edit_text(
             "Введите дисциплину вручную", reply_markup=back_track_name_button()
         )
@@ -100,8 +129,15 @@ async def process_discipline(callback: CallbackQuery, state: FSMContext) -> None
         await callback.answer()
 
 
-@track_name_router.message(TrackNameStates.CUSTOM_DISCIPLINE)
+@track_name_router.message(
+    TrackNameStates.CUSTOM_DISCIPLINE,
+    lambda message: message.text and message.text.isalpha(),
+)
 async def set_custom_discipline(message: Message, state: FSMContext) -> None:
+    custom_discipline = message.text.strip()
+    if not custom_discipline or not custom_discipline.isalpha():
+        await message.answer("Пожалуйста, введите дисциплину только из букв.")
+        return
     await state.update_data(discipline=message.text)
     await show_final_result(message, state)
 
