@@ -12,10 +12,12 @@ def get_retry_search_button(text: str) -> InlineKeyboardBuilder:
     builder.row(InlineKeyboardButton(text=text, callback_data="find_track"))
     return builder
 
+
 async def break_processing() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="Завершить",
-                                     callback_data="break_processing"))
+    builder.row(
+        InlineKeyboardButton(text="Завершить", callback_data="break_processing")
+    )
     return builder.as_markup()
 
 

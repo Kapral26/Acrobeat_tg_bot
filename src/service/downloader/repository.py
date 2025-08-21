@@ -49,8 +49,9 @@ class DownloaderRepoYT(DownloaderAbstractRepo):
             ydl.download([url])
 
     async def download_track(self, url: str, output_path: Path):
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, partial(self._download, url, output_path))
+        await asyncio.get_event_loop().run_in_executor(
+            None, self._download, url, output_path
+        )
 
     def _search_track(self, query: str, max_results: int = 3):
         ydl_opts = {
@@ -64,10 +65,13 @@ class DownloaderRepoYT(DownloaderAbstractRepo):
             return info["entries"]
 
     async def find_tracks_on_phrase(self, query: str):
-        loop = asyncio.get_event_loop()
-        results = await loop.run_in_executor(None, partial(self._search_track, query))
+        results = await asyncio.get_event_loop().run_in_executor(
+            None, partial(self._search_track, query)
+        )
         for item in results:
-            item["webpage_url"] = await self.cache_repository.set_track_url(item["webpage_url"])
+            item["webpage_url"] = await self.cache_repository.set_track_url(
+                item["webpage_url"]
+            )
 
         return results
 

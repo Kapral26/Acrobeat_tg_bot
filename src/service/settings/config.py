@@ -1,22 +1,19 @@
-import logging
 from pathlib import Path
 
 from load_dotenv import load_dotenv
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings
 
-from src.service.settings.logger import setup_file_logger
-
 dotenv_path = Path(__file__).parent.parent.parent.parent.absolute() / ".env"
 load_dotenv(dotenv_path.as_posix())
 
 
 class PostgresSettings(BaseSettings):
-    user: str = Field(..., env="POSTGRES_USER")
-    password: SecretStr = Field(..., env="POSTGRES_PASSWORD")
-    db: str = Field(..., env="POSTGRES_DB")
-    host: str = Field(..., env="POSTGRES_HOST")
-    port: int = Field(..., env="POSTGRES_PORT")
+    user: str = Field(validation_alias="POSTGRES_USER")
+    password: SecretStr = Field(validation_alias="POSTGRES_PASSWORD")
+    db: str = Field(validation_alias="POSTGRES_DB")
+    host: str = Field(validation_alias="POSTGRES_HOST")
+    port: int = Field(validation_alias="POSTGRES_PORT")
 
     @property
     def async_database_dsn(self) -> str:
@@ -32,24 +29,24 @@ class PostgresSettings(BaseSettings):
 
 
 class MinIOSettings(BaseSettings):
-    root_user: str = Field(..., env="MINIO_ROOT_USER")
-    root_password: str = Field(..., env="MINIO_ROOT_PASSWORD")
+    root_user: str = Field(validation_alias="MINIO_ROOT_USER")
+    root_password: str = Field(validation_alias="MINIO_ROOT_PASSWORD")
 
     class Config:
         env_prefix = "MINIO_"
 
 
 class RedisSettings(BaseSettings):
-    host: str = Field(..., env="REDIS_HOST")
-    port: int = Field(..., env="REDIS_PORT")
-    db: int = Field(..., env="REDIS_DB")
+    host: str = Field(validation_alias="REDIS_HOST")
+    port: int = Field(validation_alias="REDIS_PORT")
+    db: int = Field(validation_alias="REDIS_DB")
 
     class Config:
         env_prefix = "REDIS_"
 
 
 class BotSettings(BaseSettings):
-    token: SecretStr = Field(..., env="BOT_TOKEN")
+    token: SecretStr = Field(validation_alias="BOT_TOKEN")
 
     class Config:
         env_prefix = "BOT_"
@@ -60,15 +57,8 @@ class Settings(BaseSettings):
     minio: MinIOSettings = Field(default_factory=MinIOSettings)
     bot: BotSettings = Field(default_factory=BotSettings)
     redis: RedisSettings = Field(default_factory=RedisSettings)
-    debug: bool = Field(..., env="DEBUG")
+    debug: bool = Field(validation_alias="DEBUG", default=False)
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        setup_file_logger(
-            log_file="acrobeat_bot.log",
-            log_level=logging.INFO if not self.debug else logging.DEBUG,
-            logger_name="acrobeat_bot",
-        )
 
     model_config = {
         "env_nested_delimiter": "__",

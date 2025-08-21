@@ -13,13 +13,14 @@ from src.service.downloader.abstarction import DownloaderAbstractRepo
 from src.service.downloader.cach_repository import DownloaderCacheRepo
 from src.service.settings.config import Settings
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass
 class DownloaderService:
     repository: list[DownloaderAbstractRepo]
     cache_repository: DownloaderCacheRepo
     settings: Settings
-    logger: logging.Logger
 
     def _get_repo(self, repo_alias: str) -> DownloaderAbstractRepo:
         repo = next(x for x in self.repository if x.alias == repo_alias)
@@ -31,10 +32,11 @@ class DownloaderService:
         bot: Bot,
         chat_id: int,
     ) -> RepoTracks | None:
-        self.logger.debug(f"Searching for tracks on phrase '{phrase}'")
+        logger.debug(f"Searching for tracks on phrase '{phrase}'")
 
         self.repository.sort(key=lambda x: x.priority)
         for _idx, repo in enumerate(self.repository):
+            logger.debug(f"Поиск в источнике {repo.alias}")
             try:
                 founded_tracks = await processing_msg(
                     repo.find_tracks_on_phrase,
@@ -49,14 +51,14 @@ class DownloaderService:
                         repo_alias=repo.alias,
                     )
             except Exception as e:
-                self.logger.exception(f"Ошибка в {repo}: {e}")
+                logger.exception(f"Ошибка в {repo.alias}: {e}")
                 continue
         return None
 
     async def download_track(
         self, download_params: DownloadTrackParams, bot: Bot, chat_id: int
     ):
-        self.logger.debug(
+        logger.debug(
             f"Downloading track '{download_params.url}', repo: '{download_params.repo_alias}'"
         )
         track_path = Path(gettempdir()) / f"{uuid.uuid4()}.mp3"
@@ -65,15 +67,19 @@ class DownloaderService:
 
         cache_url_track = await self.cache_repository.get_track_url(download_params.url)
 
-        await processing_msg(
-            repo.download_track,
-            (cache_url_track, track_path),
-            bot=bot,
-            chat_id=chat_id,
-            spinner_msg="🛬 Загрузка трека на сервер",
-        )
-
-        return track_path
+        try:
+            await processing_msg(
+                repo.download_track,
+                (cache_url_track, track_path),
+                bot=bot,
+                chat_id=chat_id,
+                spinner_msg="🛬 Загрузка трека на сервер",
+            )
+        except Exception as error:
+            logger.exception(error)  # noqa: TRY401
+            raise
+        else:
+            return track_path
 
 
 async def processing_msg(

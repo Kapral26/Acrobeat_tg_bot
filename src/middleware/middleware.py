@@ -5,6 +5,8 @@ import time
 from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject
 
+logger = logging.getLogger(__name__)
+
 
 class RateLimitMiddleware(BaseMiddleware):
     """Ограничение запросов в секунду для каждого чата."""
@@ -15,8 +17,6 @@ class RateLimitMiddleware(BaseMiddleware):
         self.timestamps_by_chat = {}
 
     async def __call__(self, handler: callable, event: TelegramObject, data: dict):
-        logger = await data["dishka_container"].get(logging.Logger)
-
         if event.message:
             chat_id = event.message.chat.id
         elif event.callback_query:
@@ -47,7 +47,6 @@ class RateLimitMiddleware(BaseMiddleware):
 
 class LoggingMiddleware(BaseMiddleware):
     async def __call__(self, handler, event: TelegramObject, data: dict):  # noqa: ANN001, D102
-        logger = await data["dishka_container"].get(logging.Logger)
         start_time = asyncio.get_event_loop().time()
         try:
             result = await handler(event, data)
@@ -62,5 +61,5 @@ class LoggingMiddleware(BaseMiddleware):
             summary = f"callback '{event.callback_query.data}' from {event.callback_query.from_user.username}"
         else:
             summary = f"{event.event_type}"
-        logger.info(f"Обработка {summary} события заняла {duration:.3f} сек")
+        logger.debug(f"Обработка {summary} события заняла {duration:.3f} сек")
         return result
