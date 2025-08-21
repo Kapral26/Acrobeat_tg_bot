@@ -7,6 +7,7 @@ from src.middleware.middleware import LoggingMiddleware
 
 from src.service.di.containers import create_container
 from src.service.settings.config import Settings
+from src.service.settings.logger_setup import configure_logging
 from src.service.storage import get_storage
 
 settings = Settings()
@@ -19,7 +20,7 @@ class TelegramBot:
         self.dp = Dispatcher(storage=self.storage)
 
         container = create_container()
-
+        configure_logging(debug=settings.debug)
         # Подключаем контейнер к диспетчеру
         setup_dishka(container, self.dp)
         self._register_routers()
