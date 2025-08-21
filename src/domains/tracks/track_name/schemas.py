@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 
-class TrackPartSchema(BaseModel):
+class TrackNamePartSchema(BaseModel):
     id: int
     track_part: str
 

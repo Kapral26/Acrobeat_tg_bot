@@ -4,7 +4,7 @@ from functools import wraps
 
 from aiogram import types
 
-from src.domains.tracks.track_name.schemas import TrackPartSchema
+from src.domains.tracks.track_name.schemas import TrackNamePartSchema
 from src.domains.users.repository import UserRepository
 from src.domains.users.schemas import UsersSchema
 
@@ -52,8 +52,16 @@ class UserService:
             return None
         return UsersSchema.model_validate(user)
 
-    async def get_user_tracks(self, user_id: int) -> list[TrackPartSchema] | None:
-        user_tracks = await self.user_repository.get_user_tracks(user_id)
+    async def get_user_track_names(
+        self, user_id: int
+    ) -> list[TrackNamePartSchema] | None:
+        user_tracks = await self.user_repository.get_user_track_names(user_id)
         if user_tracks is None:
             return None
-        return [TrackPartSchema.model_validate(x) for x in user_tracks]
+        return [TrackNamePartSchema.model_validate(x) for x in user_tracks]
+
+    async def set_user_track_names(
+        self, user_id: int, second_name: str, first_name: str, year_of_birth: int
+    ):
+        track_part_name = f"{second_name}_{first_name}_{year_of_birth}"
+        await self.user_repository.set_user_track_names(user_id, track_part_name)

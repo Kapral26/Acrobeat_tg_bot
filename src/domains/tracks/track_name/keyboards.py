@@ -1,7 +1,7 @@
 from aiogram.types import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from src.domains.tracks.track_name.schemas import TrackPartSchema
+from src.domains.tracks.track_name.schemas import TrackNamePartSchema
 
 
 def back_track_name_button():
@@ -50,19 +50,46 @@ def discipline_keyboard():
     return builder.as_markup()
 
 
-def user_track_parts_keyboard(user_track_parts: list[TrackPartSchema] | None):
+async def user_track_name_parts_keyboard(
+    user_track_parts: list[TrackNamePartSchema],
+    page: int,
+    total_pages: int,
+):
     builder = InlineKeyboardBuilder()
 
     for item in user_track_parts:
         builder.row(
             InlineKeyboardButton(
-                text=item.track_part, callback_data=f"track_part:{item.id}"
+                text=item.track_part, callback_data=f"t_p:{item.track_part}"
             )
         )
 
+    builder.adjust(2)
+
+    navigate_key = []
+    if page > 1:
+        navigate_key.append(
+            InlineKeyboardButton(
+                text="⬅️ Назад", callback_data=f"track_name_page:{page - 1}"
+            )
+        )
+    if page < total_pages:
+        navigate_key.append(
+            InlineKeyboardButton(
+                text="Вперед ➡️", callback_data=f"track_name_page:{page + 1}"
+            )
+        )
+
+    builder.row(*navigate_key)
     builder.row(
         InlineKeyboardButton(
-            text="Добавить вручную", callback_data="hand_input_track_part"
+            text="️🔁 Вернуться в начало", callback_data="set_track_name"
+        ),
+    )
+
+    builder.row(
+        InlineKeyboardButton(
+            text="✏️ Добавить вручную", callback_data="hand_input_track_part"
         ),
     )
     return builder.as_markup()
