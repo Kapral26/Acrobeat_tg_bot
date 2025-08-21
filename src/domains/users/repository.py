@@ -1,7 +1,7 @@
 import logging
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Any
-from collections.abc import Callable, Sequence
 
 from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -64,8 +64,8 @@ class UserRepository:
         async with self.session_factory() as session:
             stmnt = (
                 select(TrackNameRegistry)
-                .join(User, User.id == TrackNameRegistry.user_id)
-                .where(User.id == user_id)
+                .where(TrackNameRegistry.user_id == user_id)
+                .order_by(TrackNameRegistry.updated_at.desc())
             )
             result = await session.execute(stmnt)
             if result:
