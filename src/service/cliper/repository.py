@@ -29,20 +29,28 @@ class TrackCliperRepo:
 
     async def concat_mp3(self, music_path: Path) -> Path:
         output_path = Path(tempfile.mkstemp(suffix=".mp3")[1])
-        list_file = Path(tempfile.mkstemp(suffix=".txt")[1])
-
-        list_file.write_text(
-            f"file '{self.beep_path.resolve()}'\nfile '{music_path.resolve()}'\n"
-        )
 
         def _concat():
+            # Сначала узнаём длительность второго трека
+            probe = ffmpeg.probe(str(music_path))
+            duration = float(probe["format"]["duration"])
+
+            fade_duration = 2
+            fade_start = max(0, int(duration - fade_duration))
+
+            # Входы: beep и основной трек
+            beep_input = ffmpeg.input(str(self.beep_path))
+            music_input = ffmpeg.input(str(music_path))
+
+            # Конкатенация через фильтры
+            joined = ffmpeg.concat(beep_input, music_input, v=0, a=1)
+            faded = joined.filter("afade", t="out", st=fade_start, d=fade_duration)
+
             (
-                ffmpeg.input(list_file.as_posix(), format="concat", safe=0)
-                .output(output_path.as_posix(), acodec="libmp3lame")
+                faded.output(str(output_path), acodec="libmp3lame")
                 .overwrite_output()
                 .run(quiet=True)
             )
-            list_file.unlink()
 
         await asyncio.to_thread(_concat)
         return output_path
