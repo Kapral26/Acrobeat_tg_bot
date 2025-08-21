@@ -56,7 +56,9 @@ class UserRepository:
             result = await session.execute(stmt)
             return result.scalars().first()
 
-    async def get_user_track_names(self, user_id: int):
+    async def get_user_track_names(
+        self, user_id: int
+    ) -> list[TrackNameRegistry] | None:
         async with self.session_factory() as session:
             stmnt = (
                 select(TrackNameRegistry)
