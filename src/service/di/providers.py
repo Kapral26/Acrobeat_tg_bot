@@ -4,6 +4,9 @@ from dishka import FromDishka, Provider, Scope, provide
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 
+from src.domains.users.cache_repository import UserCacheRepository
+from src.domains.users.repository import UserRepository
+from src.domains.users.services import UserService
 from src.service.cliper.repository import TrackCliperRepo
 from src.service.cliper.service import TrackCliperService
 from src.service.downloader.cach_repository import DownloaderCacheRepo
@@ -110,3 +113,33 @@ class CliperProvider(Provider):
         self, repo: FromDishka[TrackCliperRepo]
     ) -> TrackCliperService:
         return TrackCliperService(repo)
+
+
+class UserProvider(Provider):
+    @provide(scope=Scope.REQUEST)
+    async def get_user_repo(
+        self,
+        session_factory: FromDishka[async_sessionmaker],
+        logger: FromDishka[logging.Logger],
+    ) -> UserRepository:
+        return UserRepository(session_factory, logger)
+
+    @provide(scope=Scope.REQUEST)
+    async def get_user_cache_repo(
+        self,
+        redis_client: FromDishka[Redis],
+    ) -> UserCacheRepository:
+        return UserCacheRepository(redis_client=redis_client)
+
+    @provide(scope=Scope.REQUEST)
+    async def get_service(
+        self,
+        user_repo: FromDishka[UserRepository],
+        user_cache_repository: FromDishka[UserCacheRepository],
+        logger: FromDishka[logging.Logger],
+    ) -> UserService:
+        return UserService(
+            user_repository=user_repo,
+            user_cache_repository=user_cache_repository,
+            logger=logger,
+        )

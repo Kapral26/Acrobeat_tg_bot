@@ -1,9 +1,13 @@
-from aiogram import Bot, types
+from aiogram import Bot, F, types
 from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, Message
+from dishka import FromDishka
 from dishka.integrations.aiogram import inject
 
 from src.domains.start import start_router
 from src.domains.start.keyboards import get_start_inline_keyboard
+from src.domains.users.services import UserService
 
 
 @start_router.message(Command("start"))
@@ -11,8 +15,27 @@ from src.domains.start.keyboards import get_start_inline_keyboard
 async def start_command(
     message: types.Message,
     bot: Bot,
+    user_service: FromDishka[UserService],
 ):
     """Обработчик команды /start."""
+    await get_started_message(message)
+    await user_service.register_user(message)
+
+
+@start_router.callback_query(F.data == "break_processing")
+async def break_processing(
+    callback_query: CallbackQuery,
+    bot: Bot,
+    state: FSMContext,
+):
+    await state.clear()
+
+    await get_started_message(callback_query.message)
+
+    await callback_query.answer()
+
+
+async def get_started_message(message: Message):
     await message.answer(
         """
 🎵 Привет!
