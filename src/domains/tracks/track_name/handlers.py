@@ -180,8 +180,12 @@ async def choose_discipline(
 
     await state.update_data(year_of_birth=message.text)
 
+    data_ = await state.get_data()
     await user_service.set_user_track_names(
-        user_id=message.from_user.id, **(await state.get_data())
+        user_id=message.from_user.id,
+        second_name=data_["second_name"],
+        first_name=data_["first_name"],
+        year_of_birth=data_["year_of_birth"],
     )
 
     await state.set_state(TrackNameStates.DISCIPLINE)

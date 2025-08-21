@@ -15,7 +15,7 @@ def back_track_name_button():
 def edit_track_name_keyboard():
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text="✏️ Изменить", callback_data="edit_track_name")
+        InlineKeyboardButton(text="✏️ Изменить", callback_data="set_track_name")
     )
     builder.row(
         InlineKeyboardButton(text="✅ Завершить", callback_data="confirm_input")
