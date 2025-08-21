@@ -2,12 +2,12 @@ import asyncio
 
 from aiogram import Bot, Dispatcher
 from dishka.integrations.aiogram import setup_dishka
-from src.domains import routes
-from src.middleware.middleware import LoggingMiddleware
 
+from src.domains import routes
+from src.middleware.middleware import LoggingMiddleware, RateLimitMiddleware
 from src.service.di.containers import create_container
 from src.service.settings.config import Settings
-from src.service.settings.logger_setup import configure_logging
+from src.service.settings.logger.logger_setup import configure_logging
 from src.service.storage import get_storage
 
 settings = Settings()
@@ -31,8 +31,8 @@ class TelegramBot:
             self.dp.include_router(router)
 
     def _register_middleware(self):
-      #  self.dp.update.middleware(RateLimitMiddleware(limit=30, per_seconds=1))
         self.dp.update.middleware(LoggingMiddleware())
+        self.dp.update.middleware(RateLimitMiddleware())
 
     async def on_shutdown(self) -> None:
         await self.storage.close()

@@ -5,7 +5,6 @@ from src.service.di.providers import (
     ConfigProvider,
     DatabaseProvider,
     DownloaderProvider,
-    LoggerProvider,
     RedisProvider,
     UserProvider,
 )
@@ -13,7 +12,6 @@ from src.service.di.providers import (
 
 def create_container() -> AsyncContainer:
     containers = [
-        LoggerProvider(),
         ConfigProvider(),
         DatabaseProvider(),
         RedisProvider(),

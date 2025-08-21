@@ -1,4 +1,3 @@
-import logging
 
 from dishka import FromDishka, Provider, Scope, provide
 from redis.asyncio import Redis
@@ -13,12 +12,6 @@ from src.service.downloader.cach_repository import DownloaderCacheRepo
 from src.service.downloader.repository import DownloaderRepoPinkamuz, DownloaderRepoYT
 from src.service.downloader.service import DownloaderService
 from src.service.settings.config import Settings
-
-
-class LoggerProvider(Provider):
-    @provide(scope=Scope.APP)
-    async def get_logger(self) -> logging.Logger:
-        return logging.getLogger("acrobeat_bot")
 
 
 class ConfigProvider(Provider):
@@ -93,13 +86,11 @@ class DownloaderProvider(Provider):
         repository_pinkamuz: FromDishka[DownloaderRepoPinkamuz],
         settings: FromDishka[Settings],
         cache_repository: FromDishka[DownloaderCacheRepo],
-        logger: FromDishka[logging.Logger],
     ) -> DownloaderService:
         return DownloaderService(
             repository=[repository_pinkamuz, repository_yt],
             cache_repository=cache_repository,
             settings=settings,
-            logger=logger,
         )
 
 
@@ -120,9 +111,8 @@ class UserProvider(Provider):
     async def get_user_repo(
         self,
         session_factory: FromDishka[async_sessionmaker],
-        logger: FromDishka[logging.Logger],
     ) -> UserRepository:
-        return UserRepository(session_factory, logger)
+        return UserRepository(session_factory)
 
     @provide(scope=Scope.REQUEST)
     async def get_user_cache_repo(
@@ -136,10 +126,8 @@ class UserProvider(Provider):
         self,
         user_repo: FromDishka[UserRepository],
         user_cache_repository: FromDishka[UserCacheRepository],
-        logger: FromDishka[logging.Logger],
     ) -> UserService:
         return UserService(
             user_repository=user_repo,
             user_cache_repository=user_cache_repository,
-            logger=logger,
         )

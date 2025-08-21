@@ -1,6 +1,7 @@
 import logging
-from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Any
+from collections.abc import Callable, Sequence
 
 from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,11 +10,12 @@ from src.domains.tracks.track_name.models import TrackNameRegistry
 from src.domains.users.models import User
 from src.domains.users.schemas import UsersSchema
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass
 class UserRepository:
-    session_factory: AsyncSession
-    logger: logging.Logger
+    session_factory: Callable[[], AsyncSession]
 
     async def insert_new_user(self, user_data: UsersSchema):
         async with self.session_factory() as session:
@@ -58,7 +60,7 @@ class UserRepository:
 
     async def get_user_track_names(
         self, user_id: int
-    ) -> list[TrackNameRegistry] | None:
+    ) -> Sequence[TrackNameRegistry] | list[Any]:
         async with self.session_factory() as session:
             stmnt = (
                 select(TrackNameRegistry)

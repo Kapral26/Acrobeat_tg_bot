@@ -1,14 +1,14 @@
 import logging
 
 import aiofiles
-from aiogram import Bot, F, types
+from aiogram import Bot, F, types, \
+    Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message
 from dishka import FromDishka
 from dishka.integrations.aiogram import inject
 
-from src.domains.tracks import track_router
 from src.domains.tracks.filters import YouTubeLinkFilter
 from src.domains.tracks.keyboards import (
     break_processing,
@@ -20,9 +20,14 @@ from src.service.cliper.service import TrackCliperService
 from src.service.downloader.service import DownloaderService
 
 
+logger = logging.getLogger(__name__)
+
 class FindTrackStates(StatesGroup):
     WAITING_FOR_PHRASE = State()
     TRACK_NAME_CONFIRMED = State()
+
+
+track_router = Router(name="track_router")
 
 
 @track_router.callback_query(
@@ -51,7 +56,6 @@ async def search_tracks(
 async def handle_preview_search_track(
     message: types.Message,
     bot: Bot,
-    state: FSMContext,
     downloader: FromDishka[DownloaderService],
 ):
     find_tracks = await downloader.find_tracks_on_phrase(
@@ -70,7 +74,6 @@ async def callback_query(
     callback: CallbackQuery,
     bot: Bot,
     state: FSMContext,
-    logger: FromDishka[logging.Logger],
     downloader_service: FromDishka[DownloaderService],
     cliper_service: FromDishka[TrackCliperService],
 ):
@@ -91,7 +94,6 @@ async def callback_query(
         downloader_service=downloader_service,
         cliper_service=cliper_service,
         download_params=download_params,
-        logger=logger,
     )
 
 
@@ -101,7 +103,6 @@ async def handle_youtube_link(
     message: Message,
     bot: Bot,
     state: FSMContext,
-    logger: FromDishka[logging.Logger],
     downloader_service: FromDishka[DownloaderService],
     cliper_service: FromDishka[TrackCliperService],
 ):
@@ -114,7 +115,6 @@ async def handle_youtube_link(
         download_params=DownloadYTParams(
             url=message.text,
         ),
-        logger=logger,
     )
 
 
@@ -126,7 +126,6 @@ async def download_and_cliper(
     downloader_service: DownloaderService,
     cliper_service: TrackCliperService,
     download_params: DownloadTrackParams,
-    logger: logging.Logger,
 ):
     data = await state.get_data()
 

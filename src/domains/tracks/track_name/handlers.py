@@ -40,13 +40,14 @@ class TrackNameStates(StatesGroup):
 @track_name_router.callback_query(F.data == "set_track_name")
 @inject
 async def try_choose_track_name(
-    callback: CallbackQuery, state: FSMContext, user_service: FromDishka[UserService]
+    callback: CallbackQuery, user_service: FromDishka[UserService]
 ):
     await callback.answer()
     await _handle_search_tracks(callback, user_service, page=1)
 
 
 ITEM_PER_PAGE = 4
+
 
 @track_name_router.callback_query(F.data.startswith("track_name_page:"))
 @inject

@@ -9,6 +9,7 @@ from src.domains.users.cache_repository import UserCacheRepository
 from src.domains.users.repository import UserRepository
 from src.domains.users.schemas import UsersSchema
 
+logger = logging.getLogger(__name__)
 
 def extract_user_data(func):
     @wraps(func)
@@ -32,21 +33,20 @@ def extract_user_data(func):
 class UserService:
     user_repository: UserRepository
     user_cache_repository: UserCacheRepository
-    logger: logging.Logger
 
     @extract_user_data
     async def register_user(
         self,
-        event: types.TelegramObject,
+        event: types.TelegramObject, #noqa: unused
         user_data: UsersSchema,
     ) -> None:
         if await self.user_repository.get_user_by_id(user_data.id):
-            self.logger.info(f"User {user_data.id} already exists")
+            logger.info(f"User {user_data.id} already exists")
             return
 
-        self.logger.info("Registering new user")
+        logger.info("Registering new user")
         await self.user_repository.insert_new_user(user_data)
-        self.logger.info(f"New user registered: {user_data}")
+        logger.info(f"New user registered: {user_data}")
 
     async def get_user_by_id(self, user_id: int) -> UsersSchema | None:
         user = await self.user_repository.get_user_by_id(user_id)

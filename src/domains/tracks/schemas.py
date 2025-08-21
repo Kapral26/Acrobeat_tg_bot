@@ -1,24 +1,23 @@
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, computed_field
 
 
 class Track(BaseModel):
     title: str
     duration: int
     webpage_url: str
-    minutes: int | None = None
-    seconds: int | None = None
 
     class Config:
         from_attributes = True
 
-    @model_validator(mode="before")
-    @classmethod
-    def calculate_minutes_and_seconds(cls, values):
-        duration = values.get("duration")
-        if duration is not None:
-            values["minutes"] = duration // 60
-            values["seconds"] = duration % 60
-        return values
+    @computed_field
+    @property
+    def minutes(self) -> int:
+        return self.duration // 60
+
+    @computed_field
+    @property
+    def seconds(self) -> int:
+        return self.duration % 60
 
 
 class RepoTracks(BaseModel):
@@ -29,6 +28,7 @@ class RepoTracks(BaseModel):
 class DownloadTrackParams(BaseModel):
     repo_alias: str
     url: str
+
 
 class DownloadYTParams(DownloadTrackParams):
     repo_alias: str = "yt"

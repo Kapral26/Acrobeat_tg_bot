@@ -10,8 +10,9 @@ import ffmpeg
 class TrackCliperRepo:
     beep_path: Path = Path(__file__).parent / "beep.mp3"
 
+    @staticmethod
     async def cut_audio_fragment(
-        self, full_tack_path: Path, start_sec: float, duration_sec: float
+        full_tack_path: Path, start_sec: float, duration_sec: float
     ) -> Path:
         output_path = Path(tempfile.mkstemp(suffix=".mp3")[1])
 

@@ -1,12 +1,16 @@
 import logging.config
-import yaml
 from pathlib import Path
+
+import yaml
 
 CONFIG_PATH = Path(__file__).parent / "config.yaml"
 
+LOG_DIR = Path("logs")
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+
 
 def configure_logging(debug: bool = True):
-    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+    with open(CONFIG_PATH, encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
     logging_config = {

@@ -1,0 +1,59 @@
+logging:
+  level: INFO
+  format: "%(asctime)s | %(levelname)-8s | %(funcName)s:%(lineno)d | %(message)s"
+  handlers:
+    console:
+      class: logging.StreamHandler
+      level: INFO
+      stream: ext://sys.stdout
+
+    file_app:
+      class: logging.FileHandler
+      filename: logs/backend.log
+      level: INFO
+
+    file_sqlalchemy:
+      class: logging.FileHandler
+      filename: logs/sqlalchemy.log
+      level: INFO
+
+    file_redis:
+      class: logging.FileHandler
+      filename: logs/redis.log
+      level: INFO
+
+    file_minio:
+      class: logging.FileHandler
+      filename: logs/minio.log
+      level: INFO
+
+  loggers:
+    root:
+      handlers: [ console, file_app ]
+      level: INFO
+      propagate: false
+
+    aiogram:
+      handlers: [ console, file_app ]
+      level: INFO
+      propagate: false
+
+    sqlalchemy:
+      handlers: [ console, file_sqlalchemy ]
+      level: INFO
+      propagate: false
+
+    redis:
+      handlers: [ console, file_redis ]
+      level: INFO
+      propagate: false
+
+    aioredis:
+      handlers: [ console, file_redis ]
+      level: INFO
+      propagate: false
+
+    minio:
+      handlers: [ console, file_minio ]
+      level: INFO
+      propagate: false
