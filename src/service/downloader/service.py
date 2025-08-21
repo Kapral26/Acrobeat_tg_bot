@@ -11,6 +11,7 @@ from aiogram import Bot
 from src.domains.tracks.schemas import DownloadTrackParams, RepoTracks, Track
 from src.service.downloader.abstarction import DownloaderAbstractRepo
 from src.service.downloader.cach_repository import DownloaderCacheRepo
+from src.service.downloader.repository import TelegramDownloaderRepo
 from src.service.settings.config import Settings
 
 logger = logging.getLogger(__name__)
@@ -18,12 +19,12 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class DownloaderService:
-    repository: list[DownloaderAbstractRepo]
+    external_repository: list[DownloaderAbstractRepo]
     cache_repository: DownloaderCacheRepo
     settings: Settings
 
     def _get_repo(self, repo_alias: str) -> DownloaderAbstractRepo:
-        repo = next(x for x in self.repository if x.alias == repo_alias)
+        repo = next(x for x in self.external_repository if x.alias == repo_alias)
         return repo
 
     async def find_tracks_on_phrase(
@@ -34,8 +35,8 @@ class DownloaderService:
     ) -> RepoTracks | None:
         logger.debug(f"Searching for tracks on phrase '{phrase}'")
 
-        self.repository.sort(key=lambda x: x.priority)
-        for _idx, repo in enumerate(self.repository):
+        self.external_repository.sort(key=lambda x: x.priority)
+        for _idx, repo in enumerate(self.external_repository):
             logger.debug(f"Поиск в источнике {repo.alias}")
             try:
                 founded_tracks = await processing_msg(
@@ -43,7 +44,7 @@ class DownloaderService:
                     (phrase,),
                     bot=bot,
                     chat_id=chat_id,
-                    spinner_msg=f"🔎Поиск в источнике {_idx + 1}/{len(self.repository)}",
+                    spinner_msg=f"🔎Поиск в источнике {_idx + 1}/{len(self.external_repository)}",
                 )
                 if founded_tracks:
                     return RepoTracks(
@@ -65,7 +66,10 @@ class DownloaderService:
 
         repo = self._get_repo(download_params.repo_alias)
 
-        cache_url_track = await self.cache_repository.get_track_url(download_params.url)
+        if download_params.repo_alias != "telegram":
+            cache_url_track = await self.cache_repository.get_track_url(download_params.url)
+        else:
+            cache_url_track = download_params.url
 
         try:
             await processing_msg(
@@ -81,9 +85,32 @@ class DownloaderService:
         else:
             return track_path
 
+    # async def download_track_from_tg(
+    #         self,
+    #         bot: Bot,
+    #         chat_id: int,
+    #         file_id: str,
+    # ):
+    #     track_path = Path(gettempdir()) / f"{uuid.uuid4()}.mp3"
+    #
+    #     try:
+    #         await processing_msg(
+    #             self.repository_telegram.download_track,
+    #             (bot, file_id, track_path),
+    #             bot=bot,
+    #             chat_id=chat_id,
+    #             spinner_msg="🛬 Загрузка трека на сервер",
+    #         )
+    #     except Exception as error:
+    #         logger.exception(error)  # noqa: TRY401
+    #         raise
+    #     else:
+    #         return track_path
+
+
 
 async def processing_msg(
-    func: callable, args: tuple, bot: Bot, chat_id: int, spinner_msg: str
+    func: callable, args: tuple, bot: Bot,  chat_id: int, spinner_msg: str
 ) -> Any:  # noqa: ANN401
     """Метод для отрисовки анимации выполнения действия."""
     spinner = [

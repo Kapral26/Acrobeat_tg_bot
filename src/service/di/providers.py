@@ -1,4 +1,3 @@
-
 from dishka import FromDishka, Provider, Scope, provide
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
@@ -9,7 +8,11 @@ from src.domains.users.services import UserService
 from src.service.cliper.repository import TrackCliperRepo
 from src.service.cliper.service import TrackCliperService
 from src.service.downloader.cach_repository import DownloaderCacheRepo
-from src.service.downloader.repository import DownloaderRepoPinkamuz, DownloaderRepoYT
+from src.service.downloader.repository import (
+    DownloaderRepoPinkamuz,
+    DownloaderRepoYT,
+    TelegramDownloaderRepo,
+)
 from src.service.downloader.service import DownloaderService
 from src.service.settings.config import Settings
 
@@ -80,15 +83,26 @@ class DownloaderProvider(Provider):
         return DownloaderRepoPinkamuz(settings, cache_repository)
 
     @provide(scope=Scope.REQUEST)
+    async def get_repository_telegram(
+        self,
+    ) -> TelegramDownloaderRepo:
+        return TelegramDownloaderRepo()
+
+    @provide(scope=Scope.REQUEST)
     async def get_service(
         self,
         repository_yt: FromDishka[DownloaderRepoYT],
         repository_pinkamuz: FromDishka[DownloaderRepoPinkamuz],
+        repository_telegram: FromDishka[TelegramDownloaderRepo],
         settings: FromDishka[Settings],
         cache_repository: FromDishka[DownloaderCacheRepo],
     ) -> DownloaderService:
         return DownloaderService(
-            repository=[repository_pinkamuz, repository_yt],
+            external_repository=[
+                repository_pinkamuz,
+                repository_yt,
+                repository_telegram,
+            ],
             cache_repository=cache_repository,
             settings=settings,
         )

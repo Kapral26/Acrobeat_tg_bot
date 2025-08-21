@@ -1,8 +1,7 @@
 import logging
 
 import aiofiles
-from aiogram import Bot, F, types, \
-    Router
+from aiogram import Bot, F, Router, types
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message
@@ -15,12 +14,16 @@ from src.domains.tracks.keyboards import (
     get_search_kb,
     track_list_kb,
 )
-from src.domains.tracks.schemas import DownloadTrackParams, DownloadYTParams
+from src.domains.tracks.schemas import (
+    DownloadTelegramParams,
+    DownloadTrackParams,
+    DownloadYTParams,
+)
 from src.service.cliper.service import TrackCliperService
 from src.service.downloader.service import DownloaderService
 
-
 logger = logging.getLogger(__name__)
+
 
 class FindTrackStates(StatesGroup):
     WAITING_FOR_PHRASE = State()
@@ -87,7 +90,7 @@ async def callback_query(
         await callback.answer("Не удалось получить ссылку.")
         return
 
-    await download_and_cliper(
+    await __download_and_cliper(
         bot=bot,
         message=callback.message,
         state=state,
@@ -106,7 +109,7 @@ async def handle_youtube_link(
     downloader_service: FromDishka[DownloaderService],
     cliper_service: FromDishka[TrackCliperService],
 ):
-    await download_and_cliper(
+    await __download_and_cliper(
         bot=bot,
         message=message,
         state=state,
@@ -118,8 +121,41 @@ async def handle_youtube_link(
     )
 
 
+@track_router.message(F.content_type.in_({types.ContentType.AUDIO}))
 @inject
-async def download_and_cliper(
+async def handle_audio_message(
+    message: Message,
+    bot: Bot,
+    state: FSMContext,
+    downloader_service: FromDishka[DownloaderService],
+    cliper_service: FromDishka[TrackCliperService],
+):
+    if message.audio:
+        logger.info("Получен аудиофайл от пользователя %s", message.from_user.id)
+        audio = message.audio
+        file_id = audio.file_id
+        file_size = audio.file_size
+        duration = audio.duration
+        title = audio.title or "без названия"
+        performer = audio.performer or "неизвестный исполнитель"
+
+        logger.info(
+            f"Аудио: {title} от {performer}, длительность: {duration} сек., размер: {file_size} байт"
+        )
+
+        await __download_and_cliper(
+            bot=bot,
+            message=message,
+            state=state,
+            downloader_service=downloader_service,
+            cliper_service=cliper_service,
+            download_params=DownloadTelegramParams(
+                url=file_id,
+            ),
+        )
+
+
+async def __download_and_cliper(
     bot: Bot,
     message: Message,
     state: FSMContext,
