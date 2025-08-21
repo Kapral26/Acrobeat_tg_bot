@@ -1,8 +1,12 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import BigInteger, String
 
-from src.domains.tracks.track_name.models import TrackNameRegistry
 from src.service.database.database import Base
+
+if TYPE_CHECKING:
+    from src.domains.tracks.track_name.models import TrackNameRegistry
 
 
 class User(Base):

@@ -4,7 +4,8 @@ from functools import wraps
 
 from aiogram import types
 
-from src.domains.tracks.track_name.schemas import TrackPartSchema
+from src.domains.tracks.track_name.schemas import TrackNamePartSchema
+from src.domains.users.cache_repository import UserCacheRepository
 from src.domains.users.repository import UserRepository
 from src.domains.users.schemas import UsersSchema
 
@@ -30,6 +31,7 @@ def extract_user_data(func):
 @dataclass
 class UserService:
     user_repository: UserRepository
+    user_cache_repository: UserCacheRepository
     logger: logging.Logger
 
     @extract_user_data
@@ -52,8 +54,26 @@ class UserService:
             return None
         return UsersSchema.model_validate(user)
 
-    async def get_user_tracks(self, user_id: int) -> list[TrackPartSchema] | None:
-        user_tracks = await self.user_repository.get_user_tracks(user_id)
-        if user_tracks is None:
-            return None
-        return [TrackPartSchema.model_validate(x) for x in user_tracks]
+    async def get_user_track_names(
+        self, user_id: int
+    ) -> list[TrackNamePartSchema] | None:
+        if user_tracks := await self.user_cache_repository.get_user_track_names(
+            user_id
+        ):
+            pass
+        else:
+            user_tracks = await self.user_repository.get_user_track_names(user_id)
+            if user_tracks:
+                user_tracks = [
+                    TrackNamePartSchema.model_validate(x) for x in user_tracks
+                ]
+                await self.user_cache_repository.set_user_track_names(
+                    user_id=user_id, track_names=user_tracks
+                )
+        return user_tracks
+
+    async def set_user_track_names(
+        self, user_id: int, second_name: str, first_name: str, year_of_birth: int
+    ):
+        track_part_name = f"{second_name}_{first_name}_{year_of_birth}"
+        await self.user_repository.set_user_track_names(user_id, track_part_name)

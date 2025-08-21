@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.domains.tracks.track_name.models import TrackNameRegistry
 from src.domains.users.models import User
 from src.domains.users.schemas import UsersSchema
 
@@ -55,9 +56,29 @@ class UserRepository:
             result = await session.execute(stmt)
             return result.scalars().first()
 
-    async def get_user_tracks(self, user_id: int):
+    async def get_user_track_names(
+        self, user_id: int
+    ) -> list[TrackNameRegistry] | None:
         async with self.session_factory() as session:
-            result = await session.get(User, user_id)
+            stmnt = (
+                select(TrackNameRegistry)
+                .join(User, User.id == TrackNameRegistry.user_id)
+                .where(User.id == user_id)
+            )
+            result = await session.execute(stmnt)
             if result:
-                return result.track_names
+                return result.scalars().all()
             return []
+
+    async def set_user_track_names(self, user_id: int, track_part_name: str):
+        async with self.session_factory() as session:
+            stmnt = insert(TrackNameRegistry).values(
+                user_id=user_id,
+                track_part=track_part_name,
+            )
+            try:
+                await session.execute(stmnt)
+            except Exception as e:
+                await session.rollback()
+            else:
+                await session.commit()

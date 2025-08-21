@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 
-from aiogram import F
+from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message
@@ -9,14 +9,15 @@ from dishka import FromDishka
 from dishka.integrations.aiogram import inject
 
 from src.domains.tracks.handlers import search_tracks
-from src.domains.tracks.track_name import track_name_router
 from src.domains.tracks.track_name.keyboards import (
     back_track_name_button,
     discipline_keyboard,
     edit_track_name_keyboard,
-    user_track_parts_keyboard,
+    user_track_name_parts_keyboard,
 )
 from src.domains.users.services import UserService
+
+track_name_router = Router(name="track_name_router")
 
 
 class TrackNameStates(StatesGroup):
@@ -42,24 +43,58 @@ async def try_choose_track_name(
     callback: CallbackQuery, state: FSMContext, user_service: FromDishka[UserService]
 ):
     await callback.answer()
+    await _handle_search_tracks(callback, user_service, page=1)
 
-    user_track_parts = await user_service.get_user_tracks(callback.from_user.id)
 
+ITEM_PER_PAGE = 4
+
+@track_name_router.callback_query(F.data.startswith("track_name_page:"))
+@inject
+async def handle_search_tracks(
+    callback: CallbackQuery,
+    user_service: FromDishka[UserService],
+    page: int | None = None,
+):
+    if page is None:
+        page = int(callback.data.split(":")[-1])
+    await _handle_search_tracks(callback, user_service, page)
+
+
+async def _handle_search_tracks(
+    callback: CallbackQuery,
+    user_service: UserService,
+    page: int | None = None,
+):
+    await callback.answer("Сейчас посмотрим, что вы вводили ранее...")
+
+    user_track_parts = await user_service.get_user_track_names(callback.from_user.id)
+
+    total_pages = (len(user_track_parts) + ITEM_PER_PAGE - 1) // ITEM_PER_PAGE
+    start_idx = (page - 1) * ITEM_PER_PAGE
+    end_idx = start_idx + ITEM_PER_PAGE
+
+    current_page = user_track_parts[start_idx:end_idx]
+    message_text = "<b>Ранее введенные данные:</b>\n\n"
     await callback.message.edit_text(
-        """Вы можете выбрать название из списка или ввести новый вариант""",
-        reply_markup=await user_track_parts_keyboard(user_track_parts),
+        message_text,
+        parse_mode="html",
+        reply_markup=await user_track_name_parts_keyboard(
+            current_page, page, total_pages
+        ),
     )
 
 
-@track_name_router.callback_query(F.data.startswith("track_part:"))
+@track_name_router.callback_query(F.data.startswith("t_p:"))
 async def set_track_part(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
 
-    second_name, first_name, year_of_birth = callback.message.text.split("_")
+    data = callback.data.split("t_p:")[-1]
 
-    await state.update_data(first_name=second_name.upper())
+    second_name, first_name, year_of_birth = data.split("_")
+
+    await state.update_data(first_name=first_name.upper())
     await state.update_data(second_name=second_name.capitalize())
-    await state.update_data(year_of_birth=second_name)
+    await state.update_data(year_of_birth=year_of_birth)
     await state.set_state(TrackNameStates.DISCIPLINE)
     await callback.message.answer(
         "Выберите спортивную дисциплину", reply_markup=discipline_keyboard()
@@ -124,7 +159,10 @@ async def set_year_of_birth(message: Message, state: FSMContext) -> None:
 
 
 @track_name_router.message(TrackNameStates.YEAR_OF_BIRTH)
-async def choose_discipline(message: Message, state: FSMContext) -> None:
+@inject
+async def choose_discipline(
+    message: Message, state: FSMContext, user_service: FromDishka[UserService]
+) -> None:
     year_of_birth = message.text.strip()
 
     if not year_of_birth.isdigit():
@@ -140,6 +178,11 @@ async def choose_discipline(message: Message, state: FSMContext) -> None:
         return
 
     await state.update_data(year_of_birth=message.text)
+
+    await user_service.set_user_track_names(
+        user_id=message.from_user.id, **(await state.get_data())
+    )
+
     await state.set_state(TrackNameStates.DISCIPLINE)
     await message.answer(
         "Выберите спортивную дисциплину", reply_markup=discipline_keyboard()
