@@ -13,6 +13,7 @@ from pathlib import Path
 from urllib.parse import quote, urljoin
 
 import httpx
+from aiogram import Bot
 from bs4 import BeautifulSoup
 from yt_dlp import YoutubeDL
 
@@ -48,7 +49,7 @@ class DownloaderRepoYT(DownloaderAbstractRepo):
         with YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
 
-    async def download_track(self, url: str, output_path: Path):
+    async def download_track(self, bot: Bot, url: str, output_path: Path):
         await asyncio.get_event_loop().run_in_executor(
             None, self._download, url, output_path
         )
@@ -158,5 +159,30 @@ class DownloaderRepoPinkamuz(DownloaderAbstractRepo):
             with open(output_path, "wb") as f:
                 f.write(response.content)
 
-    async def download_track(self, url: str, output_path: Path) -> None:
+    async def download_track(self, bot: Bot, url: str, output_path: Path) -> None:
         await self._download(url, output_path)
+
+
+@dataclass
+class TelegramDownloaderRepo(DownloaderAbstractRepo):
+    priority = 100
+
+    @property
+    def alias(self) -> str:
+        return "telegram"
+
+    def _download(self, url: str, output_path: Path) -> None:
+        pass
+
+    def _search_track(self, query: str, max_results: int = 3) -> list[dict | None]:
+        return []
+
+    async def find_tracks_on_phrase(self, query: str) -> list[dict | None]:
+        return []
+
+    async def download_track(self, bot: Bot, file_id: str, output_path: Path) -> None:
+        try:
+            file = await bot.get_file(file_id)
+            await bot.download_file(file.file_path, destination=output_path)
+        except Exception as e:
+            raise RuntimeError(f"Ошибка при загрузке файла из Telegram: {e}")

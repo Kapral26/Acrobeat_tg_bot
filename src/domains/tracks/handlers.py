@@ -1,8 +1,7 @@
 import logging
 
 import aiofiles
-from aiogram import Bot, F, types, \
-    Router
+from aiogram import Bot, F, Router, types
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message
@@ -13,14 +12,19 @@ from src.domains.tracks.filters import YouTubeLinkFilter
 from src.domains.tracks.keyboards import (
     break_processing,
     get_search_kb,
+    set_track_name_keyboard,
     track_list_kb,
 )
-from src.domains.tracks.schemas import DownloadTrackParams, DownloadYTParams
+from src.domains.tracks.schemas import (
+    DownloadTelegramParams,
+    DownloadTrackParams,
+    DownloadYTParams,
+)
 from src.service.cliper.service import TrackCliperService
 from src.service.downloader.service import DownloaderService
 
-
 logger = logging.getLogger(__name__)
+
 
 class FindTrackStates(StatesGroup):
     WAITING_FOR_PHRASE = State()
@@ -87,7 +91,7 @@ async def callback_query(
         await callback.answer("Не удалось получить ссылку.")
         return
 
-    await download_and_cliper(
+    await __download_and_cliper(
         bot=bot,
         message=callback.message,
         state=state,
@@ -98,28 +102,44 @@ async def callback_query(
 
 
 @track_router.message(YouTubeLinkFilter())
-@inject
 async def handle_youtube_link(
     message: Message,
     bot: Bot,
     state: FSMContext,
-    downloader_service: FromDishka[DownloaderService],
-    cliper_service: FromDishka[TrackCliperService],
 ):
-    await download_and_cliper(
-        bot=bot,
-        message=message,
-        state=state,
-        downloader_service=downloader_service,
-        cliper_service=cliper_service,
-        download_params=DownloadYTParams(
-            url=message.text,
-        ),
+    await message.answer(
+        text="🎧️ Вам необходимо указать название трека.",
+        reply_markup=await set_track_name_keyboard(),
+    )
+
+    await state.set_data(
+        {"download_params": DownloadYTParams(url=message.text).model_dump()}
     )
 
 
+@track_router.message(F.content_type.in_({types.ContentType.AUDIO}))
 @inject
-async def download_and_cliper(
+async def handle_audio_message(
+    message: Message,
+    bot: Bot,
+    state: FSMContext,
+):
+    if message.audio:
+        logger.info("Получен аудиофайл от пользователя %s", message.from_user.id)
+        audio = message.audio
+        file_id = audio.file_id
+
+        await state.set_data(
+            {"download_params": DownloadTelegramParams(url=file_id).model_dump()}
+        )
+
+        await message.answer(
+            text="🎧️ Вам необходимо указать название трека.",
+            reply_markup=await set_track_name_keyboard(),
+        )
+
+
+async def __download_and_cliper(
     bot: Bot,
     message: Message,
     state: FSMContext,

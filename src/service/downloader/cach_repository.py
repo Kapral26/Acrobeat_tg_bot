@@ -18,12 +18,19 @@ class DownloaderCacheRepo:
     async def get_track_url(self, track_url_id: str) -> str:
         key = f"track_url:{track_url_id}"
         data = await self.redis_client.get(key)
-        if data:
-            return data.decode("utf8")
-        else:
-            raise ValueError("Не найдено")
+        return data.decode("utf8") if data else track_url_id
 
     async def set_track_url(self, track_url: str) -> str:
+        """
+        Метод для временного хранения ссылки на трек.
+        Требуется т.к. callback_data inline-кнопки в боте может передавать,
+        не большее 64-байт.
+
+        Используется только для конкретного репозитория треков.
+
+        :param track_url: Существующая ссылка на трек
+        :return: callback_data со ссылкой на скачивание трека.
+        """
         track_url_id = secrets.token_hex(8)
         key = f"track_url:{track_url_id}"
         await self.redis_client.setex(key, CacheTTL.TEN_MINUTES.value, track_url)

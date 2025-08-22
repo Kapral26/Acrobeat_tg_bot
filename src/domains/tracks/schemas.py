@@ -32,3 +32,8 @@ class DownloadTrackParams(BaseModel):
 
 class DownloadYTParams(DownloadTrackParams):
     repo_alias: str = "yt"
+
+
+class DownloadTelegramParams(DownloadTrackParams):
+    repo_alias: str = "telegram"
+

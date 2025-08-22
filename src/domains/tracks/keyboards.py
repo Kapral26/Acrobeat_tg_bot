@@ -16,7 +16,7 @@ def get_retry_search_button(text: str) -> InlineKeyboardBuilder:
 async def break_processing() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text="🚫 Завершить", callback_data="break_processing")
+        InlineKeyboardButton(text="🔁 Вернуться", callback_data="break_processing"),
     )
     return builder.as_markup()
 
@@ -40,4 +40,14 @@ async def track_list_kb(repo_result: RepoTracks) -> InlineKeyboardMarkup:
 
 async def get_search_kb() -> InlineKeyboardMarkup:
     builder = get_retry_search_button("🔁 Найти еще один трек")
+    return builder.as_markup()
+
+
+async def set_track_name_keyboard():
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(
+            text="✏️ Ввести", callback_data="set_track_name"
+        )
+    )
     return builder.as_markup()
