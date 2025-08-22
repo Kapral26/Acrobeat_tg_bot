@@ -36,4 +36,4 @@ class DownloadYTParams(DownloadTrackParams):
 
 class DownloadTelegramParams(DownloadTrackParams):
     repo_alias: str = "telegram"
-    url: int
+

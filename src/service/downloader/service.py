@@ -11,7 +11,6 @@ from aiogram import Bot
 from src.domains.tracks.schemas import DownloadTrackParams, RepoTracks, Track
 from src.service.downloader.abstarction import DownloaderAbstractRepo
 from src.service.downloader.cach_repository import DownloaderCacheRepo
-from src.service.downloader.repository import TelegramDownloaderRepo
 from src.service.settings.config import Settings
 
 logger = logging.getLogger(__name__)
@@ -66,15 +65,12 @@ class DownloaderService:
 
         repo = self._get_repo(download_params.repo_alias)
 
-        if download_params.repo_alias != "telegram":
-            cache_url_track = await self.cache_repository.get_track_url(download_params.url)
-        else:
-            cache_url_track = download_params.url
+        url_track = await self.cache_repository.get_track_url(download_params.url)
 
         try:
             await processing_msg(
                 repo.download_track,
-                (cache_url_track, track_path),
+                (bot, url_track, track_path),
                 bot=bot,
                 chat_id=chat_id,
                 spinner_msg="🛬 Загрузка трека на сервер",
@@ -102,15 +98,14 @@ class DownloaderService:
     #             spinner_msg="🛬 Загрузка трека на сервер",
     #         )
     #     except Exception as error:
-    #         logger.exception(error)  # noqa: TRY401
+    #         logger.exception(error)
     #         raise
     #     else:
     #         return track_path
 
 
-
 async def processing_msg(
-    func: callable, args: tuple, bot: Bot,  chat_id: int, spinner_msg: str
+    func: callable, args: tuple, bot: Bot, chat_id: int, spinner_msg: str
 ) -> Any:  # noqa: ANN401
     """Метод для отрисовки анимации выполнения действия."""
     spinner = [

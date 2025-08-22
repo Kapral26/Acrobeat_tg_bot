@@ -10,6 +10,9 @@ YOUTUBE_REGEX = re.compile(
 
 class YouTubeLinkFilter(BaseFilter):
     async def __call__(self, message: Message) -> bool:
+        if not message.text:
+            return False
+
         text = message.text.strip()
 
         if YOUTUBE_REGEX.match(text):

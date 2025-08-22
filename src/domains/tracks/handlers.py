@@ -12,6 +12,7 @@ from src.domains.tracks.filters import YouTubeLinkFilter
 from src.domains.tracks.keyboards import (
     break_processing,
     get_search_kb,
+    set_track_name_keyboard,
     track_list_kb,
 )
 from src.domains.tracks.schemas import (
@@ -101,23 +102,18 @@ async def callback_query(
 
 
 @track_router.message(YouTubeLinkFilter())
-@inject
 async def handle_youtube_link(
     message: Message,
     bot: Bot,
     state: FSMContext,
-    downloader_service: FromDishka[DownloaderService],
-    cliper_service: FromDishka[TrackCliperService],
 ):
-    await __download_and_cliper(
-        bot=bot,
-        message=message,
-        state=state,
-        downloader_service=downloader_service,
-        cliper_service=cliper_service,
-        download_params=DownloadYTParams(
-            url=message.text,
-        ),
+    await message.answer(
+        text="🎧️ Вам необходимо указать название трека.",
+        reply_markup=await set_track_name_keyboard(),
+    )
+
+    await state.set_data(
+        {"download_params": DownloadYTParams(url=message.text).model_dump()}
     )
 
 
@@ -127,31 +123,19 @@ async def handle_audio_message(
     message: Message,
     bot: Bot,
     state: FSMContext,
-    downloader_service: FromDishka[DownloaderService],
-    cliper_service: FromDishka[TrackCliperService],
 ):
     if message.audio:
         logger.info("Получен аудиофайл от пользователя %s", message.from_user.id)
         audio = message.audio
         file_id = audio.file_id
-        file_size = audio.file_size
-        duration = audio.duration
-        title = audio.title or "без названия"
-        performer = audio.performer or "неизвестный исполнитель"
 
-        logger.info(
-            f"Аудио: {title} от {performer}, длительность: {duration} сек., размер: {file_size} байт"
+        await state.set_data(
+            {"download_params": DownloadTelegramParams(url=file_id).model_dump()}
         )
 
-        await __download_and_cliper(
-            bot=bot,
-            message=message,
-            state=state,
-            downloader_service=downloader_service,
-            cliper_service=cliper_service,
-            download_params=DownloadTelegramParams(
-                url=file_id,
-            ),
+        await message.answer(
+            text="🎧️ Вам необходимо указать название трека.",
+            reply_markup=await set_track_name_keyboard(),
         )
 
 

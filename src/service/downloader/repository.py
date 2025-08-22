@@ -49,7 +49,7 @@ class DownloaderRepoYT(DownloaderAbstractRepo):
         with YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
 
-    async def download_track(self, url: str, output_path: Path):
+    async def download_track(self, bot: Bot, url: str, output_path: Path):
         await asyncio.get_event_loop().run_in_executor(
             None, self._download, url, output_path
         )
@@ -159,7 +159,7 @@ class DownloaderRepoPinkamuz(DownloaderAbstractRepo):
             with open(output_path, "wb") as f:
                 f.write(response.content)
 
-    async def download_track(self, url: str, output_path: Path) -> None:
+    async def download_track(self, bot: Bot, url: str, output_path: Path) -> None:
         await self._download(url, output_path)
 
 
@@ -182,6 +182,7 @@ class TelegramDownloaderRepo(DownloaderAbstractRepo):
 
     async def download_track(self, bot: Bot, file_id: str, output_path: Path) -> None:
         try:
-            await bot.download_file(file_id, destination=output_path)
+            file = await bot.get_file(file_id)
+            await bot.download_file(file.file_path, destination=output_path)
         except Exception as e:
             raise RuntimeError(f"Ошибка при загрузке файла из Telegram: {e}")

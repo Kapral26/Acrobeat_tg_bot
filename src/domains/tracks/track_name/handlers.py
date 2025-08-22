@@ -1,14 +1,15 @@
 import re
 from datetime import datetime
 
-from aiogram import F, Router
+from aiogram import Bot, F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message
 from dishka import FromDishka
 from dishka.integrations.aiogram import inject
 
-from src.domains.tracks.handlers import search_tracks
+from src.domains.tracks.handlers import __download_and_cliper, search_tracks
+from src.domains.tracks.schemas import DownloadTrackParams
 from src.domains.tracks.track_name.keyboards import (
     back_track_name_button,
     discipline_keyboard,
@@ -16,6 +17,8 @@ from src.domains.tracks.track_name.keyboards import (
     user_track_name_parts_keyboard,
 )
 from src.domains.users.services import UserService
+from src.service.cliper.service import TrackCliperService
+from src.service.downloader.service import DownloaderService
 
 track_name_router = Router(name="track_name_router")
 
@@ -265,10 +268,30 @@ async def show_final_result(message: Message, state: FSMContext) -> None:
 
 
 @track_name_router.callback_query(F.data == "confirm_input")
-async def confirm_input(callback: CallbackQuery, state: FSMContext):
+@inject
+async def confirm_input(
+    callback: CallbackQuery,
+    bot: Bot,
+    state: FSMContext,
+    downloader_service: FromDishka[DownloaderService],
+    cliper_service: FromDishka[TrackCliperService],
+):
     result = await get_track_name(state)
     await state.update_data(track_name=result)
-    await search_tracks(callback, state)
+    state_data = await state.get_data()
+    download_params = state_data.get("download_params")
+    if not download_params:
+        await search_tracks(callback, state)
+    else:
+        download_params = DownloadTrackParams(**download_params)
+        await __download_and_cliper(
+            bot=bot,
+            message=callback.message,
+            state=state,
+            downloader_service=downloader_service,
+            cliper_service=cliper_service,
+            download_params=download_params,
+        )
 
 
 async def get_track_name(state):

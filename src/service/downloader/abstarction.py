@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+from aiogram import Bot
+
 
 class DownloaderAbstractRepo(ABC):
-
     @property
     @abstractmethod
     def alias(self) -> str:
@@ -14,7 +15,7 @@ class DownloaderAbstractRepo(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def download_track(self, url: str, output_path: Path) -> None:
+    async def download_track(self, bot: Bot, url: str, output_path: Path) -> None:
         raise NotImplementedError
 
     @abstractmethod
