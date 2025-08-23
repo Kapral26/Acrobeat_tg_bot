@@ -7,6 +7,7 @@ from src.service.database.database import Base
 
 if TYPE_CHECKING:
     from src.domains.tracks.track_name.models import TrackNameRegistry
+    from src.domains.tracks.track_storage.models import TrackRequest
 
 
 class User(Base):
@@ -20,3 +21,5 @@ class User(Base):
     track_names: Mapped[list["TrackNameRegistry"]] = relationship(
         "TrackNameRegistry", back_populates="user", cascade="all, delete-orphan"
     )
+
+    track_requests: Mapped[list["TrackRequest"]] = relationship(back_populates="user")

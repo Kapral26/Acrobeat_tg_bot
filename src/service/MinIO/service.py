@@ -1,5 +1,6 @@
 import asyncio
 from datetime import timedelta
+from pathlib import Path
 
 import aiobotocore.session
 import aiofiles
@@ -38,7 +39,8 @@ async def upload_and_get_url(file_path: str, bucket: str, object_name: str) -> s
 
 # Пример использования
 async def main():
-    url = await upload_and_get_url("./demo.mp3", "clips", "demo.mp3")
+    path = Path(__file__).parent.parent / "cliper" / "beep.mp3"
+    url = await upload_and_get_url(path.as_posix(), "clips", "demo.mp3")
     print(f"Presigned URL: {url}")
 
 
