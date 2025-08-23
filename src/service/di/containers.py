@@ -1,13 +1,13 @@
 from dishka import AsyncContainer, make_async_container
 
-from src.service.di.providers import (
-    CliperProvider,
+from src.service.dependencies import (
     ConfigProvider,
     DatabaseProvider,
-    DownloaderProvider,
     RedisProvider,
-    UserProvider,
 )
+from src.domains.users.dependencies import UserProvider
+from src.service.cliper.dependencies import CliperProvider
+from src.service.downloader.dependencies import DownloaderProvider
 
 
 def create_container() -> AsyncContainer:
