@@ -4,14 +4,16 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from src.domains.tracks.track_name.models import TrackNameRegistry
-from src.domains.tracks.track_storage.track_request_storage.models import Clip, Track, TrackRequest
+from src.domains.tracks.track_storage.track_request_storage.models import TrackRequest
+from src.domains.tracks.track_storage.models import DownloadedTrack, \
+    Clip
 from src.domains.users.models import User
 from src.service.database.database import Base
 from src.service.settings.config import Settings
 
 __models__ = [
     User,
-    Track,
+    DownloadedTrack,
     TrackRequest,
     Clip,
     TrackNameRegistry,
