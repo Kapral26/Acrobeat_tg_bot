@@ -29,8 +29,16 @@ class PostgresSettings(BaseSettings):
 
 
 class MinIOSettings(BaseSettings):
-    root_user: str = Field(validation_alias="MINIO_ROOT_USER")
-    root_password: str = Field(validation_alias="MINIO_ROOT_PASSWORD")
+    aws_secret_access_key: str = Field(validation_alias="MINIO_AWS_SECRET_ACCESS_KEY")
+    aws_access_key_id: str = Field(validation_alias="MINIO_AWS_ACCESS_KEY_ID")
+    region_name: str = Field(validation_alias="MINIO_REGION_NAME")
+    host: str = Field(validation_alias="MINIO_HOST")
+    port: int = Field(validation_alias="MINIO_PORT")
+
+    @property
+    def endpoint_url(self) -> str:
+        return f"{self.host}:{self.port}"
+
 
     class Config:
         env_prefix = "MINIO_"

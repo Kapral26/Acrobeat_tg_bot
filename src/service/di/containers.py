@@ -12,6 +12,7 @@ from src.service.dependencies import (
     RedisProvider,
 )
 from src.service.downloader.dependencies import DownloaderProvider
+from src.service.MinIO.dependencies import MinIOProvider
 
 
 def create_container() -> AsyncContainer:
@@ -24,6 +25,7 @@ def create_container() -> AsyncContainer:
         UserProvider(),
         TrackRequestProvider(),
         TrackStorageProvider(),
+        MinIOProvider(),
     ]
 
     return make_async_container(*containers)
