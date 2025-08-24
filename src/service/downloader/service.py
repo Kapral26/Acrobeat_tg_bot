@@ -1,20 +1,16 @@
-import asyncio
 import logging
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import gettempdir
-from typing import Any
 
 from aiogram import Bot
 
 from src.domains.tracks.schemas import DownloadTrackParams, RepoTracks, Track
-from src.domains.tracks.track_storage.track_request_storage.service import (
-    TrackRequestStorageService,
-)
 from src.service.downloader.abstarction import DownloaderAbstractRepo
 from src.service.downloader.cach_repository import DownloaderCacheRepo
 from src.service.settings.config import Settings
+from src.service.utils import processing_msg
 
 logger = logging.getLogger(__name__)
 
@@ -81,52 +77,4 @@ class DownloaderService:
         else:
             return track_path
 
-    # async def download_track_from_tg(
-    #         self,
-    #         bot: Bot,
-    #         chat_id: int,
-    #         file_id: str,
-    # ):
-    #     track_path = Path(gettempdir()) / f"{uuid.uuid4()}.mp3"
-    #
-    #     try:
-    #         await processing_msg(
-    #             self.repository_telegram.download_track,
-    #             (bot, file_id, track_path),
-    #             bot=bot,
-    #             chat_id=chat_id,
-    #             spinner_msg="🛬 Загрузка трека на сервер",
-    #         )
-    #     except Exception as error:
-    #         logger.exception(error)
-    #         raise
-    #     else:
-    #         return track_path
 
-
-async def processing_msg(
-    func: callable, args: tuple, bot: Bot, chat_id: int, spinner_msg: str
-) -> Any:  # noqa: ANN401
-    """Метод для отрисовки анимации выполнения действия."""
-    spinner = [
-        f"{spinner_msg} ⠋",
-        f"{spinner_msg} ⠙",
-        f"{spinner_msg} ⠹",
-        f"{spinner_msg} ⠸",
-        f"{spinner_msg} ⠼",
-        f"{spinner_msg} ⠴",
-        f"{spinner_msg} ⠦",
-        f"{spinner_msg} ⠧",
-        f"{spinner_msg} ⠇",
-        f"{spinner_msg} ⠏",
-    ]
-    index = 0
-    loading_msg = await bot.send_message(chat_id=chat_id, text=spinner[index])
-    task = asyncio.create_task(func(*args))
-    while not task.done():
-        index = (index + 1) % len(spinner)
-        await loading_msg.edit_text(spinner[index])
-        await asyncio.sleep(0.2)
-    task_result = task.result()
-    await loading_msg.delete()
-    return task_result

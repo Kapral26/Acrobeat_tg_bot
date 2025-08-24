@@ -1,6 +1,7 @@
 from dishka import FromDishka, Provider, Scope, provide
 from redis.asyncio import Redis
 
+from src.service.downloader.abstarction import DownloaderAbstractRepo
 from src.service.downloader.cach_repository import DownloaderCacheRepo
 from src.service.downloader.repository import (
     DownloaderRepoPinkamuz,
@@ -42,20 +43,27 @@ class DownloaderProvider(Provider):
         return TelegramDownloaderRepo()
 
     @provide(scope=Scope.REQUEST)
-    async def get_service(
+    async def get_external_repository(
         self,
         repository_yt: FromDishka[DownloaderRepoYT],
         repository_pinkamuz: FromDishka[DownloaderRepoPinkamuz],
         repository_telegram: FromDishka[TelegramDownloaderRepo],
+    ) -> list[DownloaderAbstractRepo]:
+        return [
+            repository_pinkamuz,
+            repository_yt,
+            repository_telegram,
+        ]
+
+    @provide(scope=Scope.REQUEST)
+    async def get_service(
+        self,
+        external_repository: list[DownloaderAbstractRepo],
         settings: FromDishka[Settings],
         cache_repository: FromDishka[DownloaderCacheRepo],
     ) -> DownloaderService:
         return DownloaderService(
-            external_repository=[
-                repository_pinkamuz,
-                repository_yt,
-                repository_telegram,
-            ],
+            external_repository=external_repository,
             cache_repository=cache_repository,
             settings=settings,
         )

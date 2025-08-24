@@ -5,7 +5,7 @@ from pathlib import Path
 from aiogram import Bot
 
 from src.service.cliper.repository import TrackCliperRepo
-from src.service.downloader.service import processing_msg
+from src.service.utils import processing_msg
 
 logger = logging.getLogger(__name__)
 
