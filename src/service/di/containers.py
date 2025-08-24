@@ -1,7 +1,6 @@
 from dishka import AsyncContainer, make_async_container
 
-from src.domains.tracks.track_storage.dependencies import TrackStorageProvider
-from src.domains.tracks.track_storage.track_request_storage.dependencies import (
+from src.domains.tracks.track_request.dependencies import (
     TrackRequestProvider,
 )
 from src.domains.users.dependencies import UserProvider
@@ -23,7 +22,6 @@ def create_container() -> AsyncContainer:
         CliperProvider(),
         UserProvider(),
         TrackRequestProvider(),
-        TrackStorageProvider(),
     ]
 
     return make_async_container(*containers)

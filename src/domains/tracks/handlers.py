@@ -20,6 +20,7 @@ from src.domains.tracks.schemas import (
     DownloadTrackParams,
     DownloadYTParams,
 )
+from src.domains.tracks.track_request.service import TrackRequestService
 from src.service.cliper.service import TrackCliperService
 from src.service.downloader.service import DownloaderService
 
@@ -61,12 +62,18 @@ async def handle_preview_search_track(
     message: types.Message,
     bot: Bot,
     downloader: FromDishka[DownloaderService],
+    track_request_service: FromDishka[TrackRequestService],
 ):
+    await track_request_service.insert_track_request(
+        message.from_user.id,
+        message.text,
+    )
+
     find_tracks = await downloader.find_tracks_on_phrase(
         phrase=message.text,
         bot=bot,
         chat_id=message.chat.id,
-        user_id=message.from_user.id
+        user_id=message.from_user.id,
     )
 
     await message.answer(

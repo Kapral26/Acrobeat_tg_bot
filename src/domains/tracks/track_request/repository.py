@@ -1,17 +1,17 @@
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
-from sqlalchemy import Result, desc, insert, select
+from sqlalchemy import Result, desc, func, insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.domains.tracks.track_storage.track_request_storage.models import TrackRequest
-from src.domains.tracks.track_storage.track_request_storage.schemas import (
+from src.domains.tracks.track_request.models import TrackRequest
+from src.domains.tracks.track_request.schemas import (
     TrackRequestSchema,
 )
 
 
 @dataclass
-class TrackRequestStorageRepository:
+class TrackRequestRepository:
     """
     Репозиторий для работы с моделью TrackRequest.
 
@@ -55,7 +55,7 @@ class TrackRequestStorageRepository:
                 await session.commit()
                 return request_id
 
-    async def get_track_request(self, user_id: int) -> Sequence[TrackRequest]:
+    async def get_track_user_request(self, user_id: int) -> Sequence[TrackRequest]:
         """
         Получает последние 12 запросов на треки, связанных с указанным пользователем.
 
@@ -76,21 +76,18 @@ class TrackRequestStorageRepository:
             query_result = await session.execute(stmt)
             return query_result.scalars().all()
 
-    async def pair_track_and_request(self, request_id: int, track_id: int) -> None:
-        """
-        Связывает существующий запрос с конкретным треком.
 
-        Обновляет поле `track_id` у объекта TrackRequest.
-
-        Args:
-            request_id (int): Идентификатор запроса.
-            track_id (int): Идентификатор трека, к которому будет привязан запрос.
-
-        Raises:
-            Exception: При ошибке доступа или обновления данных.
-
-        """
+    async def get_track_request(self, ) -> Sequence[tuple[TrackRequest, int]]:
+        """Получает популярные 12 запросов на треки."""
         async with self.session_factory() as session:
-            request_data = session.get(TrackRequest, request_id)
-            request_data.track_id = track_id
-            await session.refresh(request_data)
+            stmt = (
+                select(
+                    TrackRequest.query_text,
+                    func.count(TrackRequest.id).label("count")
+                )
+                .group_by(TrackRequest.query_text)
+                .order_by(desc("count"))
+                .limit(12)
+            )
+            query_result = await session.execute(stmt)
+            return query_result.scalars().all()
