@@ -63,7 +63,10 @@ async def handle_preview_search_track(
     downloader: FromDishka[DownloaderService],
 ):
     find_tracks = await downloader.find_tracks_on_phrase(
-        phrase=message.text, bot=bot, chat_id=message.chat.id
+        phrase=message.text,
+        bot=bot,
+        chat_id=message.chat.id,
+        user_id=message.from_user.id
     )
 
     await message.answer(

@@ -7,7 +7,7 @@ from src.service.database.database import Base
 
 if TYPE_CHECKING:
     from src.domains.tracks.track_name.models import TrackNameRegistry
-    from src.domains.tracks.track_storage.models import TrackRequest
+    from src.domains.tracks.track_storage.track_request_storage.models import TrackRequest
 
 
 class User(Base):

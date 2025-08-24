@@ -9,6 +9,9 @@ from typing import Any
 from aiogram import Bot
 
 from src.domains.tracks.schemas import DownloadTrackParams, RepoTracks, Track
+from src.domains.tracks.track_storage.track_request_storage.service import (
+    TrackRequestStorageService,
+)
 from src.service.downloader.abstarction import DownloaderAbstractRepo
 from src.service.downloader.cach_repository import DownloaderCacheRepo
 from src.service.settings.config import Settings
@@ -27,10 +30,7 @@ class DownloaderService:
         return repo
 
     async def find_tracks_on_phrase(
-        self,
-        phrase: str,
-        bot: Bot,
-        chat_id: int,
+        self, phrase: str, bot: Bot, chat_id: int, user_id: int
     ) -> RepoTracks | None:
         logger.debug(f"Searching for tracks on phrase '{phrase}'")
 

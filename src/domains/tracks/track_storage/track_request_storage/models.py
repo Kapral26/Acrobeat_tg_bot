@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from sqlalchemy import TIMESTAMP, ForeignKey, String, Text, event
+from sqlalchemy import TIMESTAMP, BigInteger, ForeignKey, String, Text, event
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.domains.users.models import User
@@ -22,8 +22,11 @@ class Track(Base):
     )
 
     # связи
-    clips: Mapped[list["Clip"]] = relationship(back_populates="track", cascade="all, delete")
+    clips: Mapped[list["Clip"]] = relationship(
+        back_populates="track", cascade="all, delete"
+    )
     requests: Mapped[list["TrackRequest"]] = relationship(back_populates="track")
+
 
 @event.listens_for(Track, "before_insert")
 def generate_expires_at(mapper, connection, target: Track):
@@ -32,16 +35,15 @@ def generate_expires_at(mapper, connection, target: Track):
     target.expires_at = datetime.now() + timedelta(seconds=one_hour)
 
 
-
 class TrackRequest(Base):
     __tablename__ = "track_requests"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
-    query_text: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), default=datetime.utcnow
+    user_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("users.id"), nullable=False
     )
+    query_text: Mapped[str] = mapped_column(Text, nullable=False)
+    track_id: Mapped[int] = mapped_column(ForeignKey(Track.id))
 
     # связи
     track: Mapped["Track"] = relationship(back_populates="requests")
@@ -56,10 +58,6 @@ class Clip(Base):
     clip_url: Mapped[str] = mapped_column(Text, nullable=False)
     clip_start_sec: Mapped[int] = mapped_column(nullable=False)
     clip_duration: Mapped[int] = mapped_column(nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), default=datetime.utcnow
-    )
 
     # связи
     track: Mapped["Track"] = relationship(back_populates="clips")
-

@@ -1,13 +1,12 @@
-from dishka import Provider, \
-    provide, \
-    Scope, \
-    FromDishka
+from dishka import FromDishka, Provider, Scope, provide
 from redis.asyncio import Redis
 
 from src.service.downloader.cach_repository import DownloaderCacheRepo
-from src.service.downloader.repository import DownloaderRepoYT, \
-    DownloaderRepoPinkamuz, \
-    TelegramDownloaderRepo
+from src.service.downloader.repository import (
+    DownloaderRepoPinkamuz,
+    DownloaderRepoYT,
+    TelegramDownloaderRepo,
+)
 from src.service.downloader.service import DownloaderService
 from src.service.settings.config import Settings
 
