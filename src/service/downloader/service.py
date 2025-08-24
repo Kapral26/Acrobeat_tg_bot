@@ -9,7 +9,7 @@ from aiogram import Bot
 from src.domains.tracks.schemas import DownloadTrackParams, RepoTracks, Track
 from src.service.downloader.abstarction import DownloaderAbstractRepo
 from src.service.downloader.cach_repository import DownloaderCacheRepo
-from src.service.settings.config import Settings
+from src.service.MinIO.service import MinIOService
 from src.service.utils import processing_msg
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 class DownloaderService:
     external_repository: list[DownloaderAbstractRepo]
     cache_repository: DownloaderCacheRepo
-    settings: Settings
 
     def _get_repo(self, repo_alias: str) -> DownloaderAbstractRepo:
         repo = next(x for x in self.external_repository if x.alias == repo_alias)
@@ -76,5 +75,3 @@ class DownloaderService:
             raise
         else:
             return track_path
-
-

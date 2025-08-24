@@ -59,11 +59,9 @@ class DownloaderProvider(Provider):
     async def get_service(
         self,
         external_repository: list[DownloaderAbstractRepo],
-        settings: FromDishka[Settings],
         cache_repository: FromDishka[DownloaderCacheRepo],
     ) -> DownloaderService:
         return DownloaderService(
             external_repository=external_repository,
             cache_repository=cache_repository,
-            settings=settings,
         )
