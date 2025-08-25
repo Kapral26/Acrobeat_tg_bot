@@ -4,7 +4,7 @@ import aiofiles
 from aiogram import Bot, F, Router, types
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, TelegramObject
 from dishka import FromDishka
 from dishka.integrations.aiogram import inject
 
@@ -35,25 +35,59 @@ class FindTrackStates(StatesGroup):
 track_router = Router(name="track_router")
 
 
-@track_router.callback_query(
-    F.data == "find_track",
-)
+@track_router.callback_query(F.data == "find_track")
 @inject
-async def search_tracks(
+async def handler_search_tracks(
     callback: types.CallbackQuery,
+    bot: Bot,
+    downloader_service: FromDishka[DownloaderService],
+    track_request_service: FromDishka[TrackRequestService],
     state: FSMContext,
 ):
+    await search_tracks(
+        callback=callback,
+        bot=bot,
+        state=state,
+        downloader=downloader_service,
+        track_request_service=track_request_service,
+    )
+
+
+async def search_tracks(
+    callback: types.CallbackQuery,
+    bot: Bot,
+    downloader: DownloaderService,
+    track_request_service: TrackRequestService,
+    state: FSMContext,
+) -> None:
     await callback.answer()
-    text_search_track = "📝 Введите название песни, исполнителя."
-    if callback.message.text:
-        await callback.message.edit_text(
-            text_search_track, reply_markup=await break_processing()
+
+    state_data = await state.get_data()
+    if state_data.get("query_text"):
+        await _handle_preview_request_service(
+            bot=bot,
+            event=callback.message,
+            downloader=downloader,
+            track_request_service=track_request_service,
+            query_text=state_data.get("query_text"),
+            user_id=callback.from_user.id,
+            chat_id=callback.message.chat.id,
         )
+        logger.debug("Удаляем из состояния пред. запрос.")
+        del state_data["query_text"]
+        await state.set_data(state_data)
+
     else:
-        await callback.message.answer(
-            text_search_track, reply_markup=await break_processing()
-        )
-    await state.set_state(FindTrackStates.WAITING_FOR_PHRASE)
+        text_search_track = "📝 Введите название песни, исполнителя."
+        if callback.message.text:
+            await callback.message.edit_text(
+                text_search_track, reply_markup=await break_processing()
+            )
+        else:
+            await callback.message.answer(
+                text_search_track, reply_markup=await break_processing()
+            )
+        await state.set_state(FindTrackStates.WAITING_FOR_PHRASE)
 
 
 @track_router.message(FindTrackStates.WAITING_FOR_PHRASE)
@@ -64,19 +98,37 @@ async def handle_preview_search_track(
     downloader: FromDishka[DownloaderService],
     track_request_service: FromDishka[TrackRequestService],
 ):
-    await track_request_service.insert_track_request(
-        message.from_user.id,
-        message.text,
-    )
-
-    find_tracks = await downloader.find_tracks_on_phrase(
-        phrase=message.text,
+    await _handle_preview_request_service(
         bot=bot,
-        chat_id=message.chat.id,
+        event=message,
+        downloader=downloader,
+        track_request_service=track_request_service,
+        query_text=message.text,
         user_id=message.from_user.id,
+        chat_id=message.chat.id,
     )
 
-    await message.answer(
+
+async def _handle_preview_request_service(
+    bot: Bot,
+    event: TelegramObject,
+    downloader: DownloaderService,
+    track_request_service: TrackRequestService,
+    query_text: str,
+    user_id: int,
+    chat_id: int,
+):
+    await track_request_service.insert_track_request(
+        user_id=user_id,
+        query_text=query_text,
+    )
+    find_tracks = await downloader.find_tracks_on_phrase(
+        phrase=query_text,
+        bot=bot,
+        chat_id=chat_id,
+        user_id=user_id,
+    )
+    await event.answer(
         "Выберите подходящую песню:",
         reply_markup=await track_list_kb(find_tracks),
     )

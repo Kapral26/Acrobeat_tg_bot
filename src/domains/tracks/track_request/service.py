@@ -35,7 +35,10 @@ class TrackRequestService:
             logger.exception(f"Failed to get track request {user_id}: {e}")
             raise
         else:
-            return [TrackRequestSchema.model_validate(x) for x in track_requests]
+            return [
+                TrackRequestSchema(user_id=x.user_id, query_text=x.query_text)
+                for x in track_requests
+            ]
 
     async def get_track_request(self) -> list[TrackRequestSchema]:
         logger.info(f"Getting top track request")

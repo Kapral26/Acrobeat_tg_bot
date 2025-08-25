@@ -28,14 +28,6 @@ class PostgresSettings(BaseSettings):
         env_prefix = "POSTGRES_"
 
 
-class MinIOSettings(BaseSettings):
-    root_user: str = Field(validation_alias="MINIO_ROOT_USER")
-    root_password: str = Field(validation_alias="MINIO_ROOT_PASSWORD")
-
-    class Config:
-        env_prefix = "MINIO_"
-
-
 class RedisSettings(BaseSettings):
     host: str = Field(validation_alias="REDIS_HOST")
     port: int = Field(validation_alias="REDIS_PORT")
@@ -54,11 +46,9 @@ class BotSettings(BaseSettings):
 
 class Settings(BaseSettings):
     postgres: PostgresSettings = Field(default_factory=PostgresSettings)
-    minio: MinIOSettings = Field(default_factory=MinIOSettings)
     bot: BotSettings = Field(default_factory=BotSettings)
     redis: RedisSettings = Field(default_factory=RedisSettings)
     debug: bool = Field(validation_alias="DEBUG", default=False)
-
 
     model_config = {
         "env_nested_delimiter": "__",

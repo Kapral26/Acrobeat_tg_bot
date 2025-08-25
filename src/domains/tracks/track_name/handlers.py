@@ -16,6 +16,7 @@ from src.domains.tracks.track_name.keyboards import (
     edit_track_name_keyboard,
     user_track_name_parts_keyboard,
 )
+from src.domains.tracks.track_request.service import TrackRequestService
 from src.domains.users.services import UserService
 from src.service.cliper.service import TrackCliperService
 from src.service.downloader.service import DownloaderService
@@ -259,7 +260,6 @@ async def go_back(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-# Хелпер: показать результат и очистить стейт
 async def show_final_result(message: Message, state: FSMContext) -> None:
     result = await get_track_name(state)
     await message.answer(
@@ -275,13 +275,20 @@ async def confirm_input(
     state: FSMContext,
     downloader_service: FromDishka[DownloaderService],
     cliper_service: FromDishka[TrackCliperService],
+    track_request_service: FromDishka[TrackRequestService],
 ):
     result = await get_track_name(state)
     await state.update_data(track_name=result)
     state_data = await state.get_data()
     download_params = state_data.get("download_params")
     if not download_params:
-        await search_tracks(callback, state)
+        await search_tracks(
+            callback=callback,
+            bot=bot,
+            state=state,
+            downloader=downloader_service,
+            track_request_service=track_request_service,
+        )
     else:
         download_params = DownloadTrackParams(**download_params)
         await __download_and_cliper(
