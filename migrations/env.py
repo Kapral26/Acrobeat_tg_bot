@@ -3,11 +3,17 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from src.domains.tracks.track_name.models import TrackNameRegistry
+from src.domains.tracks.track_request.models import TrackRequest
 from src.domains.users.models import User
 from src.service.database.database import Base
 from src.service.settings.config import Settings
 
-__models__ = [User]
+__models__ = [
+    User,
+    TrackRequest,
+    TrackNameRegistry,
+]
 
 
 # this is the Alembic Config object, which provides

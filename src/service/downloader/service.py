@@ -27,10 +27,7 @@ class DownloaderService:
         return repo
 
     async def find_tracks_on_phrase(
-        self,
-        phrase: str,
-        bot: Bot,
-        chat_id: int,
+        self, phrase: str, bot: Bot, chat_id: int, user_id: int
     ) -> RepoTracks | None:
         logger.debug(f"Searching for tracks on phrase '{phrase}'")
 
