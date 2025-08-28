@@ -32,7 +32,7 @@ class TrackCacheRepository(RedisClientWrapper):
         if messages:
             await self.rpush(key, *[str(mid) for mid in messages])
         # Установка TTL (опционально)
-        await self.expire(key, 600)
+        await self.expire(key, 60)
 
     async def delete_cliper_messages_to_delete(self, user_id: int) -> None:
         key = self.cliper_messages_key.format(user_id=user_id)
