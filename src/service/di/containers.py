@@ -2,6 +2,7 @@ from dishka import AsyncContainer, make_async_container
 
 from src.domains.tracks.dependencies import TrackProvider
 from src.domains.tracks.track_cliper.dependencies import TrackCliperProvider
+from src.domains.tracks.track_name.dependencies import TrackNameProvider
 from src.domains.tracks.track_request.dependencies import (
     TrackRequestProvider,
 )
@@ -28,6 +29,7 @@ def create_container() -> AsyncContainer:
         TrackProvider(),
         TrackSearchProvider(),
         TrackCliperProvider(),
+        TrackNameProvider(),
     ]
 
     return make_async_container(*containers)

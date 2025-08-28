@@ -8,5 +8,5 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class TrackClipMsgCleanerService(ClipMsgCleanerService):
+class TrackNameMsgCleanerService(ClipMsgCleanerService):
     cache_repository: BaseMsgCleanerRepository
