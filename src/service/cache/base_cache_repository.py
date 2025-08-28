@@ -1,4 +1,7 @@
+from dataclasses import dataclass
+
 from redis import Redis
+from redis.asyncio import Redis
 
 from src.service.cache.abc import RedisBase
 
@@ -64,3 +67,30 @@ class RedisClientWrapper(RedisBase):
     async def ltrim(self, key: str, start: int, stop: int) -> bool:
         """Оставляет только указанный диапазон элементов списка"""
         return await self.redis_client.ltrim(key, start, stop)
+
+
+@dataclass
+class BaseMsgCleanerRepository(RedisClientWrapper):
+    redis_client: Redis
+
+    @property
+    def messages_key(self) -> str:
+        return "{user_id}"
+
+    def __post_init__(self):
+        super().__init__(self.redis_client)
+
+    async def get_messages_to_delete(self, user_id: int) -> list[int]:
+        key = self.messages_key.format(user_id=user_id)
+        raw_items = await self.lrange(key, 0, -1)
+        return [int(item) for item in raw_items]
+
+    async def add_message_to_delete(self, user_id: int, message_id: int) -> None:
+        key = self.messages_key.format(user_id=user_id)
+        # Добавляем элемент в конец списка
+        await self.rpush(key, str(message_id))
+        await self.expire(key, 120)
+
+    async def delete_messages_to_delete(self, user_id: int) -> None:
+        key = self.messages_key.format(user_id=user_id)
+        await self.delete(key)

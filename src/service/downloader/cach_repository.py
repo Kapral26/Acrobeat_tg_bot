@@ -32,6 +32,6 @@ class DownloaderCacheRepo:
         :return: callback_data со ссылкой на скачивание трека.
         """
         track_url_id = secrets.token_hex(8)
-        key = f"track_url:{track_url_id}"
+        key = f"{chat_id}_track_url:{track_url_id}"
         await self.redis_client.setex(key, CacheTTL.TEN_MINUTES.value, track_url)
         return track_url_id

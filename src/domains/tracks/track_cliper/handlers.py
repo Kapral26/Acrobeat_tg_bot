@@ -10,6 +10,7 @@ from dishka.integrations.aiogram import inject
 
 from src.domains.tracks.service import TrackService
 from src.domains.tracks.track_cliper.keyboards import back_period_input_button
+from src.domains.tracks.track_cliper.message_cleanup import TrackClipMsgCleanerService
 from src.domains.tracks.track_cliper.utils import is_valid_time_format
 from src.domains.users.services import UserService
 
@@ -28,26 +29,24 @@ async def handler_set_clip_period(
     callback: CallbackQuery,
     bot: Bot,
     state: FSMContext,
-    track_service: FromDishka[TrackService],
+    cleaner_service: FromDishka[TrackClipMsgCleanerService],
 ):
     await callback.answer()
     await state.set_state(SetClipPeriodStates.PERIOD_START)
-    await _period_start_message(callback, track_service)
+    await _period_start_message(callback, cleaner_service)
     await callback.answer()
 
 
 async def _period_start_message(
-    callback: CallbackQuery, track_service: TrackService
+    callback: CallbackQuery, cleaner_service: TrackClipMsgCleanerService
 ) -> None:
     send_msg = await callback.message.answer(
         "Введите время, с которого начать обрезкуПример: `00:15`",
         reply_markup=await back_period_input_button(),
         parse_mode=ParseMode.MARKDOWN_V2,
     )
-    logger.debug(
-        f"Collect mgs_id: {send_msg.message_id} _period_start_message"
-    )
-    await track_service.collect_cliper_messages_to_delete(
+    logger.debug(f"Collect mgs_id: {send_msg.message_id} _period_start_message")
+    await cleaner_service.collect_cliper_messages_to_delete(
         message_id=send_msg.message_id, user_id=callback.from_user.id
     )
     return
@@ -56,11 +55,13 @@ async def _period_start_message(
 @track_cliper_router.message(SetClipPeriodStates.PERIOD_START)
 @inject
 async def set_period_start(
-    message: Message, state: FSMContext, track_service: FromDishka[TrackService]
+    message: Message,
+    state: FSMContext,
+    cleaner_service: FromDishka[TrackClipMsgCleanerService],
 ) -> None:
     periodic_start = message.text.strip()
     logger.debug(f"Collect mgs_id: {message.message_id} set_period_start")
-    await track_service.collect_cliper_messages_to_delete(
+    await cleaner_service.collect_cliper_messages_to_delete(
         message_id=message.message_id, user_id=message.from_user.id
     )
     if not is_valid_time_format(periodic_start):
@@ -71,7 +72,7 @@ async def set_period_start(
             reply_markup=await back_period_input_button(),
             parse_mode=ParseMode.MARKDOWN_V2,
         )
-        await track_service.collect_cliper_messages_to_delete(
+        await cleaner_service.collect_cliper_messages_to_delete(
             message_id=send_msg.message_id, user_id=message.from_user.id
         )
         return
@@ -88,7 +89,7 @@ async def set_period_start(
         parse_mode=ParseMode.MARKDOWN_V2,
     )
     logger.debug(f"Collect mgs_id: {send_msg.message_id} msg_end_period")
-    await track_service.collect_cliper_messages_to_delete(
+    await cleaner_service.collect_cliper_messages_to_delete(
         message_id=send_msg.message_id, user_id=message.from_user.id
     )
 
@@ -99,12 +100,13 @@ async def set_period_end(
     message: Message,
     bot: Bot,
     state: FSMContext,
+    cleaner_service: FromDishka[TrackClipMsgCleanerService],
     track_service: FromDishka[TrackService],
     user_service: FromDishka[UserService],
 ) -> None:
     time_str = message.text.strip()
     logger.debug(f"Collect mgs_id: {message.message_id} set_period_end")
-    await track_service.collect_cliper_messages_to_delete(
+    await cleaner_service.collect_cliper_messages_to_delete(
         message_id=message.message_id, user_id=message.from_user.id
     )
     if not is_valid_time_format(time_str):
@@ -115,7 +117,7 @@ async def set_period_end(
             reply_markup=await back_period_input_button(),
             parse_mode=ParseMode.MARKDOWN_V2,
         )
-        await track_service.collect_cliper_messages_to_delete(
+        await cleaner_service.collect_cliper_messages_to_delete(
             message_id=send_msg.message_id, user_id=send_msg.from_user.id
         )
         return
@@ -139,18 +141,15 @@ async def go_back(
     callback: CallbackQuery,
     state: FSMContext,
     bot: Bot,
-    track_service: FromDishka[TrackService],
+    cleaner_service: FromDishka[TrackClipMsgCleanerService],
 ):
     current_state = await state.get_state()
 
     if current_state == SetClipPeriodStates.PERIOD_END.state:
-        await _period_start_message(callback, track_service)
+        await _period_start_message(callback, cleaner_service)
         await state.set_state(SetClipPeriodStates.PERIOD_START)
     elif current_state == SetClipPeriodStates.PERIOD_START.state:
-        await bot.delete_message(
-            callback.message.chat.id,
-            callback.message.message_id
-        )
+        await bot.delete_message(callback.message.chat.id, callback.message.message_id)
 
     await callback.answer()
 
@@ -161,9 +160,9 @@ async def clip_track_again(
     callback: CallbackQuery,
     bot: Bot,
     state: FSMContext,
-    track_service: FromDishka[TrackService],
+    cleaner_service: FromDishka[TrackClipMsgCleanerService],
 ):
-    await track_service.drop_clip_params_message(
+    await cleaner_service.drop_clip_params_message(
         bot=bot, chat_id=callback.message.chat.id, user_id=callback.from_user.id
     )
 

@@ -1,5 +1,4 @@
 import logging
-from asyncio import gather
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -8,13 +7,13 @@ from aiogram import Bot, types
 from aiogram.fsm.context import FSMContext
 from aiogram.types import InlineKeyboardMarkup, Message
 
-from src.domains.tracks.cache_repository import TrackCacheRepository
 from src.domains.tracks.keyboards import (
     cliper_result_kb,
     get_search_after_error_kb,
     set_clip_period,
 )
 from src.domains.tracks.schemas import DownloadTrackParams
+from src.domains.tracks.track_cliper.message_cleanup import TrackClipMsgCleanerService
 from src.domains.tracks.track_cliper.schemas import ClipPeriodSchema
 from src.domains.tracks.track_cliper.service import TrackCliperService
 from src.service.downloader.service import DownloaderService
@@ -26,34 +25,7 @@ logger = logging.getLogger(__name__)
 class TrackService:
     downloader_service: DownloaderService
     track_cliper_service: TrackCliperService
-    cache_repository: TrackCacheRepository
-
-    async def collect_cliper_messages_to_delete(
-        self, message_id: int, user_id: int
-    ):
-        await self.cache_repository.add_cliper_message_to_delete(user_id, message_id)
-
-    async def drop_clip_params_message(
-        self, bot: Bot, chat_id: int, user_id: int
-    ):
-        cliper_messages_to_delete = set(
-            await self.cache_repository.get_cliper_messages_to_delete(user_id)
-        )
-        if not cliper_messages_to_delete:
-            return
-
-        logger.debug(f"Dropping {cliper_messages_to_delete}")
-
-        delete_result = await gather(
-            *[
-                bot.delete_message(chat_id=chat_id, message_id=message_id)
-                for message_id in cliper_messages_to_delete
-            ]
-        )
-        logger.debug(f"Deleted "
-                     f"{dict(zip(cliper_messages_to_delete,delete_result))}")
-
-        await self.cache_repository.delete_cliper_messages_to_delete(user_id)
+    cleaner_service: TrackClipMsgCleanerService
 
     async def __send_track(
         self,
@@ -134,8 +106,9 @@ class TrackService:
             "обрежьте заново или попробуйте найти новый.",
             keyboard=keyboard,
         )
-        logger.debug(f"Collect mgs_id: {send_track_message.message_id} download_clipped_track")
-        await self.collect_cliper_messages_to_delete(
-            message_id=send_track_message.message_id,
-            user_id=user_id
+        logger.debug(
+            f"Collect mgs_id: {send_track_message.message_id} download_clipped_track"
+        )
+        await self.cleaner_service.collect_cliper_messages_to_delete(
+            message_id=send_track_message.message_id, user_id=user_id
         )
