@@ -4,7 +4,7 @@ from dishka import Provider, \
     FromDishka
 
 from src.service.cliper.repository import TrackCliperRepo
-from src.service.cliper.service import TrackCliperService
+from src.service.cliper.service import CliperService
 
 
 class CliperProvider(Provider):
@@ -15,5 +15,5 @@ class CliperProvider(Provider):
     @provide(scope=Scope.REQUEST)
     async def get_service(
         self, repo: FromDishka[TrackCliperRepo]
-    ) -> TrackCliperService:
-        return TrackCliperService(repo)
+    ) -> CliperService:
+        return CliperService(repo)

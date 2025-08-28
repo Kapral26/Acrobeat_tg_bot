@@ -8,8 +8,10 @@ from aiogram.types import CallbackQuery, Message
 from dishka import FromDishka
 from dishka.integrations.aiogram import inject
 
-from src.domains.tracks.handlers import __download_and_cliper, search_tracks
 from src.domains.tracks.schemas import DownloadTrackParams
+from src.domains.tracks.service import (
+    TrackService,
+)
 from src.domains.tracks.track_name.keyboards import (
     back_track_name_button,
     discipline_keyboard,
@@ -17,8 +19,8 @@ from src.domains.tracks.track_name.keyboards import (
     user_track_name_parts_keyboard,
 )
 from src.domains.tracks.track_request.service import TrackRequestService
+from src.domains.tracks.track_search.service import TrackSearchService
 from src.domains.users.services import UserService
-from src.service.cliper.service import TrackCliperService
 from src.service.downloader.service import DownloaderService
 
 track_name_router = Router(name="track_name_router")
@@ -199,7 +201,12 @@ async def choose_discipline(
 
 
 @track_name_router.callback_query(F.data.startswith("discipline:"))
-async def process_discipline(callback: CallbackQuery, state: FSMContext) -> None:
+@inject
+async def process_discipline(
+    callback: CallbackQuery,
+    state: FSMContext,
+    user_service: FromDishka[UserService],
+) -> None:
     value = callback.data.split(":", 1)[1]
 
     if value == "custom":
@@ -211,7 +218,12 @@ async def process_discipline(callback: CallbackQuery, state: FSMContext) -> None
         )
     else:
         await state.update_data(discipline=value)
-        await show_final_result(callback.message, state)
+        await show_final_result(
+            message=callback.message,
+            user_id=callback.from_user.id,
+            state=state,
+            user_service=user_service,
+        )
         await callback.answer()
 
 
@@ -219,13 +231,23 @@ async def process_discipline(callback: CallbackQuery, state: FSMContext) -> None
     TrackNameStates.CUSTOM_DISCIPLINE,
     lambda message: message.text and message.text.isalpha(),
 )
-async def set_custom_discipline(message: Message, state: FSMContext) -> None:
+@inject
+async def set_custom_discipline(
+    message: Message,
+    state: FSMContext,
+    user_service: FromDishka[UserService],
+) -> None:
     custom_discipline = message.text.strip()
     if not custom_discipline or not custom_discipline.isalpha():
         await message.answer("Пожалуйста, введите дисциплину только из букв.")
         return
     await state.update_data(discipline=message.text)
-    await show_final_result(message, state)
+    await show_final_result(
+        message=message,
+        user_id=message.from_user.id,
+        state=state,
+        user_service=user_service,
+    )
 
 
 # Обработчик "назад"
@@ -260,10 +282,13 @@ async def go_back(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-async def show_final_result(message: Message, state: FSMContext) -> None:
-    result = await get_track_name(state)
+async def show_final_result(
+    message: Message, user_id: int, state: FSMContext, user_service: UserService
+) -> None:
+    track_name: str = await get_track_name(state)
+    await user_service.set_session_track_names(user_id=user_id, track_name=track_name)
     await message.answer(
-        f"Результат: {result}", reply_markup=edit_track_name_keyboard()
+        f"Результат: {track_name}", reply_markup=edit_track_name_keyboard()
     )
 
 
@@ -274,37 +299,35 @@ async def confirm_input(
     bot: Bot,
     state: FSMContext,
     downloader_service: FromDishka[DownloaderService],
-    cliper_service: FromDishka[TrackCliperService],
     track_request_service: FromDishka[TrackRequestService],
+    track_search_service: FromDishka[TrackSearchService],
+    track_service: FromDishka[TrackService],
+    user_service: FromDishka[UserService],
 ):
-    result = await get_track_name(state)
-    await state.update_data(track_name=result)
     state_data = await state.get_data()
     download_params = state_data.get("download_params")
+    query_text = await user_service.get_session_query_text(callback.from_user.id)
     if not download_params:
-        await search_tracks(
+        await track_search_service.search_tracks(
             callback=callback,
             bot=bot,
             state=state,
             downloader=downloader_service,
             track_request_service=track_request_service,
+            query_text=query_text,
         )
     else:
         download_params = DownloadTrackParams(**download_params)
-        await __download_and_cliper(
-            bot=bot,
-            message=callback.message,
-            state=state,
-            downloader_service=downloader_service,
-            cliper_service=cliper_service,
-            download_params=download_params,
+
+        track_path = await track_service.download_full_track(
+            message=callback.message, download_params=download_params, bot=bot
         )
+        await state.set_data({"track_path": track_path})
 
 
-async def get_track_name(state):
+async def get_track_name(state: FSMContext) -> str:
     data = await state.get_data()
-    result = (
+    return (
         f"{data['second_name']}_{data['first_name']}"
         f"_{data['year_of_birth']}_{data['discipline']}"
     )
-    return result

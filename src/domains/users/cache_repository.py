@@ -1,14 +1,19 @@
 from dataclasses import dataclass
 
-from redis import Redis
+from redis.asyncio import Redis
 
 from src.domains.tracks.track_name.schemas import TrackNamePartSchema
+from src.service.cache.base_cache_repository import RedisClientWrapper
 
 
 @dataclass
-class UserCacheRepository:
+class UserCacheRepository(RedisClientWrapper):
     redis_client: Redis
     user_track_names_key: str = "track_names:{user_id}"
+
+    def __post_init__(self):
+        # Обязательно вызываем инициализацию родительского класса
+        super().__init__(self.redis_client)
 
     async def set_user_track_names(
         self, user_id: int, track_names: list[TrackNamePartSchema]
@@ -16,13 +21,9 @@ class UserCacheRepository:
         track_names_json = [x.model_dump_json() for x in track_names]
         async with self.redis_client.pipeline() as pipe:
             key = self.user_track_names_key.format(user_id=user_id)
-            # Удалить старые задачи, если они существуют
             await pipe.delete(key)
-            # Добавить новый список задач в Redis (в виде JSON-строк)
             await pipe.lpush(key, *track_names_json)
-            # Указываю время жизни
             await pipe.expire(key, 120)
-            # Выполнить команды в pipeline
             await pipe.execute()
 
     async def get_user_track_names(

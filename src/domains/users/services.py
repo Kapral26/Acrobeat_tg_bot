@@ -11,6 +11,7 @@ from src.domains.users.schemas import UsersSchema
 
 logger = logging.getLogger(__name__)
 
+
 def extract_user_data(func):
     @wraps(func)
     async def wrapper(self, event: types.TelegramObject, *args, **kwargs):
@@ -33,11 +34,13 @@ def extract_user_data(func):
 class UserService:
     user_repository: UserRepository
     user_cache_repository: UserCacheRepository
+    user_session_track_name: str = "session_track_name:{user_id}"
+    user_session_query_text: str = "session_query_text:{user_id}"
 
     @extract_user_data
     async def register_user(
         self,
-        event: types.TelegramObject, #noqa: unused
+        event: types.TelegramObject,  # noqa: unused
         user_data: UsersSchema,
     ) -> None:
         if await self.user_repository.get_user_by_id(user_data.id):
@@ -77,3 +80,43 @@ class UserService:
     ):
         track_part_name = f"{second_name}_{first_name}_{year_of_birth}"
         await self.user_repository.set_user_track_names(user_id, track_part_name)
+
+    async def set_session_track_names(self, user_id: int, track_name: str):
+        key = self.user_session_track_name.format(user_id=user_id)
+        await self.user_cache_repository.set(key, track_name, 180)
+
+    async def get_session_track_name(self, user_id: int) -> str:
+        key = self.user_session_track_name.format(user_id=user_id)
+        session_track_name = await self.user_cache_repository.get(key)
+
+        if not session_track_name:
+            logger.warning("Session track does not exist")
+
+        return session_track_name
+
+    async def del_session_track_name(self, user_id: int) -> None:
+        key = self.user_session_track_name.format(user_id=user_id)
+        session_track_name = await self.user_cache_repository.delete(key)
+
+        if not session_track_name:
+            logger.warning("Session track does not exist")
+
+    async def set_user_query_text(self, user_id: int, query_text: str):
+        key = self.user_session_query_text.format(user_id=user_id)
+        await self.user_cache_repository.set(key, query_text, ttl=180)
+
+    async def get_session_query_text(self, user_id: int) -> str:
+        key = self.user_session_query_text.format(user_id=user_id)
+        session_user_query = await self.user_cache_repository.get(key)
+
+        if not session_user_query:
+            logger.warning("Session query text does not exist")
+
+        return session_user_query
+
+    async def del_session_query_text(self, user_id: int) -> None:
+        key = self.user_session_query_text.format(user_id=user_id)
+        session_user_query = await self.user_cache_repository.delete(key)
+
+        if not session_user_query:
+            logger.warning("Session query text does not exist")

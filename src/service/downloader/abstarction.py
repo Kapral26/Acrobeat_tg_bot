@@ -19,9 +19,11 @@ class DownloaderAbstractRepo(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def _search_track(self, query: str, max_results: int = 3) -> list[dict]:
+    def _search_track(
+        self, query: str, chat_id: int, max_results: int = 3
+    ) -> list[dict]:
         raise NotImplementedError
 
     @abstractmethod
-    async def find_tracks_on_phrase(self, query: str) -> list[dict]:
+    async def find_tracks_on_phrase(self, query: str, chat_id: int) -> list[dict]:
         raise NotImplementedError

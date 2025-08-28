@@ -1,8 +1,11 @@
-from sqlalchemy import BigInteger, ForeignKey, \
-    Text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import BigInteger, \
+    ForeignKey, \
+    Text, \
+    UniqueConstraint
+from sqlalchemy.orm import Mapped, \
+    mapped_column, \
+    relationship
 
-from src.domains.users.models import User
 from src.service.database.database import Base
 
 
@@ -18,4 +21,4 @@ class TrackRequest(Base):
     # связи
     user: Mapped["User"] = relationship(back_populates="track_requests")
 
-
+    __table_args__ = (UniqueConstraint("user_id", "query_text", name="uq_user_query"),)

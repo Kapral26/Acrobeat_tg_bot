@@ -1,7 +1,11 @@
-from sqlalchemy import BigInteger, ForeignKey, String, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import BigInteger, \
+    ForeignKey, \
+    String, \
+    UniqueConstraint
+from sqlalchemy.orm import Mapped, \
+    mapped_column, \
+    relationship
 
-from src.domains.users.models import User
 from src.service.database.database import Base
 
 
