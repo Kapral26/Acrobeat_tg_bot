@@ -9,6 +9,7 @@ from src.domains.tracks.track_request.keyboards import (
     user_track_request_keyboard,
 )
 from src.domains.tracks.track_request.service import TrackRequestService
+from src.domains.users.services import UserService
 
 track_request_router = Router(name="track_request_router")
 
@@ -62,13 +63,15 @@ async def _handle_request_tracks(
 
 
 @track_request_router.callback_query(F.data.startswith("t_r:"))
+@inject
 async def callback_query(
     callback: CallbackQuery,
     state: FSMContext,
+    user_service: FromDishka[UserService],
 ):
     await callback.answer()
     query_text = callback.data.split(":")[-1]
-    await state.update_data(query_text=query_text)
+    await user_service.set_user_query_text(callback.from_user.id, query_text)
 
     await callback.message.edit_text(
         f"Вы выбрали:<b>{query_text}</b>\n\nПодтвердите выбор",

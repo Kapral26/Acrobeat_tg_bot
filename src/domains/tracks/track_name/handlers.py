@@ -2,23 +2,27 @@ import re
 from datetime import datetime
 
 from aiogram import Bot, F, Router
+from aiogram.enums import ParseMode
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message
 from dishka import FromDishka
 from dishka.integrations.aiogram import inject
 
-from src.domains.tracks.handlers import __download_and_cliper, search_tracks
 from src.domains.tracks.schemas import DownloadTrackParams
+from src.domains.tracks.service import (
+    TrackService,
+)
 from src.domains.tracks.track_name.keyboards import (
     back_track_name_button,
     discipline_keyboard,
     edit_track_name_keyboard,
     user_track_name_parts_keyboard,
 )
+from src.domains.tracks.track_name.message_cleanup import TrackNameMsgCleanerService
 from src.domains.tracks.track_request.service import TrackRequestService
+from src.domains.tracks.track_search.service import TrackSearchService
 from src.domains.users.services import UserService
-from src.service.cliper.service import TrackCliperService
 from src.service.downloader.service import DownloaderService
 
 track_name_router = Router(name="track_name_router")
@@ -44,10 +48,17 @@ class TrackNameStates(StatesGroup):
 @track_name_router.callback_query(F.data == "set_track_name")
 @inject
 async def try_choose_track_name(
-    callback: CallbackQuery, user_service: FromDishka[UserService]
+    callback: CallbackQuery,
+    user_service: FromDishka[UserService],
+    cleaner_service: FromDishka[TrackNameMsgCleanerService],
 ):
     await callback.answer()
-    await _handle_search_tracks(callback, user_service, page=1)
+    await _handle_search_tracks(
+        callback=callback,
+        user_service=user_service,
+        cleaner_service=cleaner_service,
+        page=1,
+    )
 
 
 ITEM_PER_PAGE = 4
@@ -58,16 +69,23 @@ ITEM_PER_PAGE = 4
 async def handle_search_tracks(
     callback: CallbackQuery,
     user_service: FromDishka[UserService],
+    cleaner_service: FromDishka[TrackNameMsgCleanerService],
     page: int | None = None,
 ):
     if page is None:
         page = int(callback.data.split(":")[-1])
-    await _handle_search_tracks(callback, user_service, page)
+    await _handle_search_tracks(
+        callback=callback,
+        user_service=user_service,
+        cleaner_service=cleaner_service,
+        page=page,
+    )
 
 
 async def _handle_search_tracks(
     callback: CallbackQuery,
     user_service: UserService,
+    cleaner_service: TrackNameMsgCleanerService,
     page: int | None = None,
 ):
     await callback.answer("Сейчас посмотрим, что вы вводили ранее...")
@@ -80,17 +98,26 @@ async def _handle_search_tracks(
 
     current_page = user_track_parts[start_idx:end_idx]
     message_text = "<b>Ранее введенные данные:</b>\n\n"
-    await callback.message.edit_text(
+    send_msg = await callback.message.edit_text(
         message_text,
         parse_mode="html",
         reply_markup=await user_track_name_parts_keyboard(
             current_page, page, total_pages
         ),
     )
+    await cleaner_service.collect_cliper_messages_to_delete(
+        message_id=send_msg.message_id,
+        user_id=callback.from_user.id,
+    )
 
 
 @track_name_router.callback_query(F.data.startswith("t_p:"))
-async def set_track_part(callback: CallbackQuery, state: FSMContext) -> None:
+@inject
+async def set_track_part(
+    callback: CallbackQuery,
+    state: FSMContext,
+    cleaner_service: FromDishka[TrackNameMsgCleanerService],
+) -> None:
     await callback.answer()
 
     data = callback.data.split("t_p:")[-1]
@@ -101,8 +128,12 @@ async def set_track_part(callback: CallbackQuery, state: FSMContext) -> None:
     await state.update_data(second_name=second_name.capitalize())
     await state.update_data(year_of_birth=year_of_birth)
     await state.set_state(TrackNameStates.DISCIPLINE)
-    await callback.message.answer(
+    send_msg = await callback.message.answer(
         "Выберите спортивную дисциплину", reply_markup=discipline_keyboard()
+    )
+    await cleaner_service.collect_cliper_messages_to_delete(
+        message_id=send_msg.message_id,
+        user_id=callback.from_user.id,
     )
 
 
@@ -199,19 +230,38 @@ async def choose_discipline(
 
 
 @track_name_router.callback_query(F.data.startswith("discipline:"))
-async def process_discipline(callback: CallbackQuery, state: FSMContext) -> None:
+@inject
+async def process_discipline(
+    callback: CallbackQuery,
+    state: FSMContext,
+    user_service: FromDishka[UserService],
+    cleaner_service: FromDishka[TrackNameMsgCleanerService],
+) -> None:
     value = callback.data.split(":", 1)[1]
 
     if value == "custom":
         await state.set_state(
             TrackNameStates.CUSTOM_DISCIPLINE,
         )
-        await callback.message.edit_text(
+        send_msg = await callback.message.edit_text(
             "Введите дисциплину вручную", reply_markup=back_track_name_button()
+        )
+        await cleaner_service.collect_cliper_messages_to_delete(
+            message_id=send_msg.message_id,
+            user_id=callback.from_user.id,
         )
     else:
         await state.update_data(discipline=value)
-        await show_final_result(callback.message, state)
+        send_msg = await show_final_result(
+            message=callback.message,
+            user_id=callback.from_user.id,
+            state=state,
+            user_service=user_service,
+        )
+        await cleaner_service.collect_cliper_messages_to_delete(
+            message_id=send_msg.message_id,
+            user_id=callback.from_user.id,
+        )
         await callback.answer()
 
 
@@ -219,13 +269,34 @@ async def process_discipline(callback: CallbackQuery, state: FSMContext) -> None
     TrackNameStates.CUSTOM_DISCIPLINE,
     lambda message: message.text and message.text.isalpha(),
 )
-async def set_custom_discipline(message: Message, state: FSMContext) -> None:
+@inject
+async def set_custom_discipline(
+    message: Message,
+    state: FSMContext,
+    user_service: FromDishka[UserService],
+    cleaner_service: FromDishka[TrackNameMsgCleanerService],
+) -> None:
     custom_discipline = message.text.strip()
     if not custom_discipline or not custom_discipline.isalpha():
-        await message.answer("Пожалуйста, введите дисциплину только из букв.")
+        send_msg = await message.answer(
+            "Пожалуйста, введите дисциплину только из букв."
+        )
+        await cleaner_service.collect_cliper_messages_to_delete(
+            message_id=send_msg.message_id,
+            user_id=message.from_user.id,
+        )
         return
     await state.update_data(discipline=message.text)
-    await show_final_result(message, state)
+    send_msg = await show_final_result(
+        message=message,
+        user_id=message.from_user.id,
+        state=state,
+        user_service=user_service,
+    )
+    await cleaner_service.collect_cliper_messages_to_delete(
+        message_id=send_msg.message_id,
+        user_id=message.from_user.id,
+    )
 
 
 # Обработчик "назад"
@@ -260,11 +331,17 @@ async def go_back(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-async def show_final_result(message: Message, state: FSMContext) -> None:
-    result = await get_track_name(state)
-    await message.answer(
-        f"Результат: {result}", reply_markup=edit_track_name_keyboard()
+async def show_final_result(
+    message: Message, user_id: int, state: FSMContext, user_service: UserService
+) -> Message:
+    track_name: str = await get_track_name(state)
+    await user_service.set_session_track_names(user_id=user_id, track_name=track_name)
+    send_msg = await message.answer(
+        f"Результат: <b>{track_name}</b>",
+        reply_markup=edit_track_name_keyboard(),
+        parse_mode=ParseMode.HTML,
     )
+    return send_msg
 
 
 @track_name_router.callback_query(F.data == "confirm_input")
@@ -274,37 +351,41 @@ async def confirm_input(
     bot: Bot,
     state: FSMContext,
     downloader_service: FromDishka[DownloaderService],
-    cliper_service: FromDishka[TrackCliperService],
     track_request_service: FromDishka[TrackRequestService],
+    track_search_service: FromDishka[TrackSearchService],
+    track_service: FromDishka[TrackService],
+    user_service: FromDishka[UserService],
+    cleaner_service: FromDishka[TrackNameMsgCleanerService],
 ):
-    result = await get_track_name(state)
-    await state.update_data(track_name=result)
+    await cleaner_service.drop_clip_params_message(
+        bot=bot, user_id=callback.from_user.id, chat_id=callback.from_user.id
+    )
+    
     state_data = await state.get_data()
     download_params = state_data.get("download_params")
+    query_text = await user_service.get_session_query_text(callback.from_user.id)
+
     if not download_params:
-        await search_tracks(
+        await track_search_service.search_tracks(
             callback=callback,
             bot=bot,
             state=state,
             downloader=downloader_service,
             track_request_service=track_request_service,
+            query_text=query_text,
         )
     else:
         download_params = DownloadTrackParams(**download_params)
-        await __download_and_cliper(
-            bot=bot,
-            message=callback.message,
-            state=state,
-            downloader_service=downloader_service,
-            cliper_service=cliper_service,
-            download_params=download_params,
+
+        track_path = await track_service.download_full_track(
+            message=callback.message, download_params=download_params, bot=bot
         )
+        await state.set_data({"track_path": track_path})
 
 
-async def get_track_name(state):
+async def get_track_name(state: FSMContext) -> str:
     data = await state.get_data()
-    result = (
+    return (
         f"{data['second_name']}_{data['first_name']}"
         f"_{data['year_of_birth']}_{data['discipline']}"
     )
-    return result

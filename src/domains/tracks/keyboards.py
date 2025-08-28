@@ -42,12 +42,36 @@ async def get_search_kb() -> InlineKeyboardMarkup:
     builder = get_retry_search_button("🔁 Найти еще один трек")
     return builder.as_markup()
 
+async def get_search_after_error_kb() -> InlineKeyboardMarkup:
+    builder = get_retry_search_button("🔁 Воспользоваться поиском")
+    return builder.as_markup()
+
+async def cliper_result_kb() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(
+            text=f"✂️ Обрезать заново",
+            callback_data=f"clip_track_again",
+        )
+    )
+    builder.attach(get_retry_search_button("🔁 Попробовать новый поиск"))
+    return builder.as_markup()
+
 
 async def set_track_name_keyboard():
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(
             text="✏️ Ввести", callback_data="set_track_name"
+        )
+    )
+    return builder.as_markup()
+
+async def set_clip_period() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(
+            text="✏️ Ввести данные", callback_data="set_clip_period"
         )
     )
     return builder.as_markup()

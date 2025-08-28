@@ -1,11 +1,3 @@
-"""
-TODO попробовать достать музыку отсюда
-https://ytmp3.cc
-https://music.youtube.com
-
-
-"""
-
 import asyncio
 from dataclasses import dataclass
 from functools import partial
@@ -15,7 +7,7 @@ from urllib.parse import quote, urljoin
 import httpx
 from aiogram import Bot
 from bs4 import BeautifulSoup
-from yt_dlp import YoutubeDL
+from yt_dlp import DownloadError, YoutubeDL
 
 from src.service.downloader.abstarction import DownloaderAbstractRepo
 from src.service.downloader.cach_repository import DownloaderCacheRepo
@@ -34,7 +26,7 @@ class DownloaderRepoYT(DownloaderAbstractRepo):
 
     def _download(self, url: str, output_path: Path):
         ydl_opts = {
-            "format": "bestaudio/best",
+            "format": "bestaudio[ext=m4a][protocol!=m3u8_native]/140/bestaudio",
             "outtmpl": output_path.with_suffix("").as_posix(),
             "postprocessors": [
                 {
@@ -43,11 +35,18 @@ class DownloaderRepoYT(DownloaderAbstractRepo):
                     "preferredquality": "192",
                 },
             ],
+            "extractor_args": {
+                "youtube": ["formats=missing_pot"],
+            },
             "quiet": not self.settings.debug,
+            "verbose": True,  # подробный вывод
         }
 
         with YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
+            try:
+                ydl.download([url])
+            except DownloadError:
+                raise
 
     async def download_track(self, bot: Bot, url: str, output_path: Path):
         await asyncio.get_event_loop().run_in_executor(
@@ -65,13 +64,13 @@ class DownloaderRepoYT(DownloaderAbstractRepo):
             info = ydl.extract_info(search_query, download=False)
             return info["entries"]
 
-    async def find_tracks_on_phrase(self, query: str):
+    async def find_tracks_on_phrase(self, query: str, chat_id:int):
         results = await asyncio.get_event_loop().run_in_executor(
-            None, partial(self._search_track, query)
+            None, partial(self._search_track, query, chat_id)
         )
         for item in results:
             item["webpage_url"] = await self.cache_repository.set_track_url(
-                item["webpage_url"]
+                item["webpage_url"], chat_id
             )
 
         return results
@@ -95,7 +94,12 @@ class DownloaderRepoPinkamuz(DownloaderAbstractRepo):
             "Referer": self.base_url,
         }
 
-    async def _search_track(self, query: str, max_results: int = 3) -> list[dict]:
+    async def _search_track(
+            self,
+            query: str,
+            chat_id:int,
+            max_results: int = 3,
+    ) -> list[dict]:
         search_url = f"{self.base_url}/search/{quote(query)}"
 
         async with httpx.AsyncClient(follow_redirects=True, timeout=30) as client:
@@ -137,7 +141,9 @@ class DownloaderRepoPinkamuz(DownloaderAbstractRepo):
 
                 href = download_tag.get("href")
                 full_url = urljoin("https://track.pinkamuz.pro", href)
-                url_cache_id = await self.cache_repository.set_track_url(full_url)
+                url_cache_id = await self.cache_repository.set_track_url(
+                    full_url, chat_id
+                )
                 results.append(
                     {
                         "title": title,
@@ -148,8 +154,12 @@ class DownloaderRepoPinkamuz(DownloaderAbstractRepo):
 
             return results
 
-    async def find_tracks_on_phrase(self, query: str) -> list[dict]:
-        return await self._search_track(query)
+    async def find_tracks_on_phrase(
+        self,
+        query: str,
+        chat_id:int
+      ) -> list[dict]:
+        return await self._search_track(query=query, chat_id=chat_id)
 
     async def _download(self, url: str, output_path: Path) -> None:
         async with httpx.AsyncClient(follow_redirects=True, timeout=60) as client:

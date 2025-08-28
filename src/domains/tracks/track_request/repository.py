@@ -1,7 +1,8 @@
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
-from sqlalchemy import Result, desc, func, insert, select
+from sqlalchemy import Result, desc, func, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domains.tracks.track_request.models import TrackRequest
@@ -44,16 +45,21 @@ class TrackRequestRepository:
                     user_id=track_request_data.user_id,
                     query_text=track_request_data.query_text,
                 )
-                .returning(TrackRequest.id)
+                .on_conflict_do_update(
+                    index_elements=[
+                        "user_id",
+                        "query_text",
+                    ],
+                    set_={"updated_at": func.now()},
+                )
             )
             try:
-                request_id = await session.execute(stmt)
+                await session.execute(stmt)
             except Exception:
                 await session.rollback()
                 raise
             else:
                 await session.commit()
-                return request_id
 
     async def get_track_user_request(self, user_id: int) -> Sequence[TrackRequest]:
         """
@@ -76,14 +82,14 @@ class TrackRequestRepository:
             query_result = await session.execute(stmt)
             return query_result.scalars().all()
 
-
-    async def get_track_request(self, ) -> Sequence[tuple[TrackRequest, int]]:
+    async def get_track_request(
+        self,
+    ) -> Sequence[tuple[TrackRequest, int]]:
         """Получает популярные 12 запросов на треки."""
         async with self.session_factory() as session:
             stmt = (
                 select(
-                    TrackRequest.query_text,
-                    func.count(TrackRequest.id).label("count")
+                    TrackRequest.query_text, func.count(TrackRequest.id).label("count")
                 )
                 .group_by(TrackRequest.query_text)
                 .order_by(desc("count"))

@@ -27,7 +27,6 @@ async def break_processing(
     callback_query: CallbackQuery,
     state: FSMContext,
 ):
-    await state.clear()
 
     await get_started_message(callback_query.message)
 
