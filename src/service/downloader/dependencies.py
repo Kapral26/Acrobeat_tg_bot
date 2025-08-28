@@ -3,6 +3,7 @@ from redis.asyncio import Redis
 
 from src.service.downloader.cach_repository import DownloaderCacheRepo
 from src.service.downloader.repository import (
+    DownloaderRepoHitmo,
     DownloaderRepoPinkamuz,
     DownloaderRepoYT,
     TelegramDownloaderRepo,
@@ -36,6 +37,14 @@ class DownloaderProvider(Provider):
         return DownloaderRepoPinkamuz(settings, cache_repository)
 
     @provide(scope=Scope.REQUEST)
+    async def get_repository_hitmo(
+        self,
+        settings: FromDishka[Settings],
+        cache_repository: FromDishka[DownloaderCacheRepo],
+    ) -> DownloaderRepoHitmo:
+        return DownloaderRepoHitmo(settings, cache_repository)
+
+    @provide(scope=Scope.REQUEST)
     async def get_repository_telegram(
         self,
     ) -> TelegramDownloaderRepo:
@@ -47,6 +56,7 @@ class DownloaderProvider(Provider):
         repository_yt: FromDishka[DownloaderRepoYT],
         repository_pinkamuz: FromDishka[DownloaderRepoPinkamuz],
         repository_telegram: FromDishka[TelegramDownloaderRepo],
+        repository_hitmo: FromDishka[DownloaderRepoHitmo],
         settings: FromDishka[Settings],
         cache_repository: FromDishka[DownloaderCacheRepo],
     ) -> DownloaderService:
@@ -55,6 +65,7 @@ class DownloaderProvider(Provider):
                 repository_pinkamuz,
                 repository_yt,
                 repository_telegram,
+                repository_hitmo,
             ],
             cache_repository=cache_repository,
             settings=settings,
