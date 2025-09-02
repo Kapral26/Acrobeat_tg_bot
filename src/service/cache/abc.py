@@ -1,12 +1,46 @@
+"""
+Модуль `abc.py` содержит абстрактный интерфейс для работы с кэшем, основанным на Redis.
+
+Этот интерфейс используется для унификации операций с кэшируемыми данными, обеспечивая возможность
+подмены реализации (например, для тестов или использования другого хранилища).
+"""
+
 from abc import ABC, abstractmethod
 
 
 class RedisBase(ABC):
-    @abstractmethod
-    async def set(self, key: str, value: str, ttl: int) -> None: ...
+    """
+    Абстрактный класс-интерфейс для работы с кэшируемыми данными.
+
+    Определяет базовые операции: установка значения, получение значения и удаление ключа.
+    """
 
     @abstractmethod
-    async def get(self, key: str) -> str | None: ...
+    async def set(self, key: str, value: str, ttl: int) -> None:
+        """
+        Устанавливает значение по указанному ключу с заданным сроком жизни (TTL).
+
+        :param key: Ключ, по которому будет храниться значение.
+        :param value: Значение, которое нужно сохранить.
+        :param ttl: Время жизни ключа в секундах.
+        """
+        raise NotImplementedError
 
     @abstractmethod
-    async def delete(self, key: str) -> None: ...
+    async def get(self, key: str) -> str | None:
+        """
+        Получает значение по указанному ключу.
+
+        :param key: Ключ, по которому нужно получить значение.
+        :return: Найденное значение или `None`, если ключ не существует.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def delete(self, key: str) -> None:
+        """
+        Удаляет значение по указанному ключу.
+
+        :param key: Ключ, который нужно удалить.
+        """
+        raise NotImplementedError

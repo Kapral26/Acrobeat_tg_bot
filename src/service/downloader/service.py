@@ -1,3 +1,11 @@
+"""
+Модуль `service.py` содержит реализацию сервиса для поиска и загрузки музыкальных треков.
+
+Сервис использует репозитории, реализующие интерфейс `DownloaderAbstractRepo`, для выполнения
+поиска треков по ключевым фразам и их загрузки. Также используется кэширующий репозиторий,
+который позволяет избегать повторного обработки уже загруженных треков.
+"""
+
 import logging
 import uuid
 from dataclasses import dataclass
@@ -5,26 +13,34 @@ from pathlib import Path
 from tempfile import gettempdir
 
 from aiogram import Bot
-from yt_dlp import DownloadError
+from yt_dlp.utils import DownloadError
 
+from src.domains.common.message_processing import processing_msg
 from src.domains.tracks.schemas import DownloadTrackParams, RepoTracks, Track
-from src.service.downloader.abstarction import DownloaderAbstractRepo
-from src.service.downloader.cach_repository import DownloaderCacheRepo
+from src.service.downloader.abstraction import DownloaderAbstractRepo
+from src.service.downloader.cache_repository import DownloaderCacheRepo
 from src.service.settings.config import Settings
-from src.service.utils import processing_msg
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class DownloaderService:
+    """Класс, предоставляющий функциональность поиска и загрузки треков."""
+
     external_repository: list[DownloaderAbstractRepo]
     cache_repository: DownloaderCacheRepo
     settings: Settings
 
     def _get_repo(self, repo_alias: str) -> DownloaderAbstractRepo:
-        repo = next(x for x in self.external_repository if x.alias == repo_alias)
-        return repo
+        """
+        Возвращает репозиторий по его алиасу.
+
+        :param repo_alias: Алиас репозитория.
+        :return: Экземпляр репозитория.
+        :raises StopIteration: Если репозиторий с таким алиасом не найден.
+        """
+        return next(x for x in self.external_repository if x.alias == repo_alias)
 
     async def find_tracks_on_phrase(
         self,
@@ -33,8 +49,21 @@ class DownloaderService:
         chat_id: int,
         skip_repo_alias: str | None = None,
     ) -> RepoTracks | None:
+        """
+        Ищет треки по заданной фразе в доступных репозиториях.
+
+        При поиске отображается индикатор загрузки. Если репозиторий был указан как `skip_repo_alias`,
+        он будет пропущен при поиске.
+
+        :param phrase: Фраза для поиска треков.
+        :param bot: Экземпляр бота Aiogram для отправки сообщений.
+        :param chat_id: ID чата, в котором будет отображаться индикатор.
+        :param skip_repo_alias: (Опционально) Алиас репозитория, который нужно пропустить.
+        :return: Найденные треки в формате `RepoTracks` или `None`, если ничего не найдено.
+        """
         logger.debug(f"Searching for tracks on phrase '{phrase}'")
 
+        # Сортируем репозитории по приоритету
         self.external_repository.sort(key=lambda x: x.priority)
 
         if skip_repo_alias:
@@ -60,8 +89,8 @@ class DownloaderService:
                         tracks=[Track.model_validate(x) for x in founded_tracks],
                         repo_alias=repo.alias,
                     )
-            except Exception as e:
-                logger.exception(f"Ошибка в {repo.alias}: {e}")
+            except Exception as error:
+                logger.exception(f"Ошибка в {repo.alias}: {error}")  # noqa: TRY401
                 continue
         return None
 
@@ -70,7 +99,20 @@ class DownloaderService:
         download_params: DownloadTrackParams,
         bot: Bot,
         chat_id: int,
-    ):
+    ) -> Path:
+        """
+        Загружает трек на сервер.
+
+        Генерируется уникальное имя файла, после чего происходит загрузка через указанный репозиторий.
+        Если возникает ошибка, она логгируется и выбрасывается исключение.
+
+        :param download_params: Параметры загрузки трека.
+        :param bot: Экземпляр бота Aiogram для отправки сообщений.
+        :param chat_id: ID чата, в котором будет отображаться индикатор.
+        :return: Путь к загруженному файлу.
+        :raises DownloadError: Если произошла ошибка загрузки.
+        :raises Exception: Если произошла другая ошибка.
+        """
         logger.debug(
             f"Downloading track '{download_params.url}', repo: '{download_params.repo_alias}'"
         )

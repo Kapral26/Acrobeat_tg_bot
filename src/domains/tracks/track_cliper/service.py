@@ -6,7 +6,7 @@ from aiogram import Bot
 
 from src.domains.tracks.track_cliper.schemas import ClipPeriodSchema
 from src.service.cliper.repository import TrackCliperRepo
-from src.service.utils import processing_msg
+from src.domains.common.message_processing import processing_msg
 
 logger = logging.getLogger(__name__)
 

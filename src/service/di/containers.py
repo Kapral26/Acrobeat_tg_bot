@@ -1,3 +1,10 @@
+"""
+Модуль `containers.py` отвечает за создание и настройку контейнера зависимостей (Dependency Injection).
+
+С помощью библиотеки `dishka` создаётся асинхронный контейнер, в который регистрируются провайдеры,
+обеспечивающие внедрение зависимостей для всех модулей приложения.
+"""
+
 from dishka import AsyncContainer, make_async_container
 
 from src.domains.tracks.dependencies import TrackProvider
@@ -18,6 +25,7 @@ from src.service.downloader.dependencies import DownloaderProvider
 
 
 def create_container() -> AsyncContainer:
+    """Создаёт и возвращает асинхронный контейнер зависимостей."""
     containers = [
         ConfigProvider(),
         DatabaseProvider(),
