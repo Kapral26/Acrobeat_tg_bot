@@ -1,3 +1,12 @@
+"""
+Модуль `service.py` содержит реализацию сервиса для работы с музыкальными треками.
+
+Обеспечивает функциональность:
+- загрузки треков из различных источников;
+- обработки аудио (вырезка фрагментов, добавление сигналов);
+- отправки готовых файлов пользователю.
+"""
+
 import logging
 from dataclasses import dataclass
 from pathlib import Path
@@ -23,12 +32,18 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class TrackService:
+    """
+    Сервис для работы с музыкальными треками.
+
+    Объединяет функциональность загрузки, обработки и отправки аудиофайлов.
+    """
+
     downloader_service: DownloaderService
     track_cliper_service: TrackCliperService
     cleaner_service: TrackClipMsgCleanerService
 
+    @staticmethod
     async def __send_track(
-        self,
         path: Path,
         bot: Bot,
         chat_id: int,
@@ -36,6 +51,17 @@ class TrackService:
         message_text: str,
         keyboard: InlineKeyboardMarkup,
     ) -> Message:
+        """
+        Вспомогательный метод для отправки аудиофайла пользователю.
+
+        :param path: Путь к аудиофайлу.
+        :param bot: Экземпляр бота Aiogram.
+        :param chat_id: ID чата получателя.
+        :param file_name: Имя файла.
+        :param message_text: Текст сообщения.
+        :param keyboard: Клавиатура для встроенного интерфейса.
+        :return: Отправленное сообщение.
+        """
         async with aiofiles.open(path, "rb") as f:
             file_content = await f.read()
             send_message = await bot.send_document(
@@ -53,18 +79,27 @@ class TrackService:
         message: Message,
         bot: Bot,
         download_params: DownloadTrackParams,
-    ):
+    ) -> Path | None:
+        """
+        Загружает полный трек из указанного источника.
+
+        :param message: Сообщение от пользователя.
+        :param bot: Экземпляр бота Aiogram.
+        :param download_params: Параметры загрузки трека.
+        """
         chat_id = message.chat.id
         try:
             track_path = await self.downloader_service.download_track(
                 download_params=download_params, bot=bot, chat_id=chat_id
             )
         except Exception as e:
+            logger.exception(f"Ошибка при загрузке трека: {e}")  # noqa: TRY401
             await message.answer(
                 "К сожалению что-то пошло не так, попробуйте воспользоваться поиском",
                 reply_markup=await get_search_after_error_kb(),
             )
-            return
+            return None
+
         keyboard = await set_clip_period()
         await self.__send_track(
             path=track_path,
@@ -72,7 +107,7 @@ class TrackService:
             chat_id=chat_id,
             file_name="example",
             message_text="🎵 Трек загружен.\nПрослушайте и укажите, с какого "
-                         "момента нужно начать обрезку",
+            "момента нужно начать обрезку",
             keyboard=keyboard,
         )
 
@@ -86,7 +121,17 @@ class TrackService:
         chat_id: int,
         state: FSMContext,
         user_id: int,
-    ):
+    ) -> None:
+        """
+        Вырезает фрагмент аудиофайла и отправляет его пользователю.
+
+        :param track_path: Путь к исходному аудиофайлу.
+        :param track_name: Название трека.
+        :param bot: Экземпляр бота Aiogram.
+        :param chat_id: ID чата получателя.
+        :param state: Состояние FSM.
+        :param user_id: ID пользователя.
+        """
         state_data = await state.get_data()
 
         clip_period = ClipPeriodSchema(

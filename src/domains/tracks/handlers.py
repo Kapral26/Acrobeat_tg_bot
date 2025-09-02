@@ -1,3 +1,12 @@
+"""
+Модуль `handlers.py` содержит обработчики событий, связанных с взаимодействием пользователя с треками.
+
+Обрабатывает:
+- нажатия на inline-кнопки для загрузки треков;
+- отправку ссылок с YouTube;
+- отправку аудиофайлов в чат.
+"""
+
 import logging
 from typing import TYPE_CHECKING
 
@@ -36,7 +45,16 @@ async def callback_query(
     state: FSMContext,
     track_service: FromDishka[TrackService],
     user_service: FromDishka["UserService"],
-):
+) -> None:
+    """
+    Обработчик inline-кнопки для загрузки трека по полученной ссылке.
+
+    :param callback: CallbackQuery от нажатия кнопки.
+    :param bot: Экземпляр бота Aiogram.
+    :param state: Состояние FSM.
+    :param track_service: Сервис для работы с треками.
+    :param user_service: Сервис для работы с пользователями.
+    """
     await callback.answer("Ссылка получены, скачаю файл.")
     download_params = callback.data.split("d_p:")[-1]
     await callback.message.delete()
@@ -46,7 +64,7 @@ async def callback_query(
     if not download_params:
         await callback.answer("Не удалось получить ссылку.")
         return
-    
+
     await user_service.del_session_query_text(callback.from_user.id)
     track_path = await track_service.download_full_track(
         message=callback.message, download_params=download_params, bot=bot
@@ -57,9 +75,18 @@ async def callback_query(
 @track_router.message(YouTubeLinkFilter())
 async def handle_youtube_link(
     message: Message,
-    bot: Bot,
+    _bot: Bot,
     state: FSMContext,
-):
+) -> None:
+    """
+    Обработчик сообщения со ссылкой на YouTube.
+
+    Запрашивает у пользователя название трека и сохраняет параметры загрузки.
+
+    :param message: Сообщение от пользователя.
+    :param _bot: Экземпляр бота Aiogram.
+    :param state: Состояние FSM.
+    """
     await message.answer(
         text="🎧️ Вам необходимо указать название трека.",
         reply_markup=await set_track_name_keyboard(),
@@ -74,9 +101,18 @@ async def handle_youtube_link(
 @inject
 async def handle_audio_message(
     message: Message,
-    bot: Bot,
+    _bot: Bot,
     state: FSMContext,
-):
+) -> None:
+    """
+    Обработчик сообщения с аудиофайлом.
+
+    Сохраняет параметры загрузки Telegram-аудио и запрашивает у пользователя название трека.
+
+    :param message: Сообщение от пользователя.
+    :param _bot: Экземпляр бота Aiogram.
+    :param state: Состояние FSM.
+    """
     if message.audio:
         logger.info("Получен аудиофайл от пользователя %s", message.from_user.id)
         audio = message.audio

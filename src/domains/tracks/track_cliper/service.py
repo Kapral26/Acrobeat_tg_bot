@@ -21,7 +21,7 @@ class TrackCliperService:
             bot: Bot,
             chat_id: int,
             clip_period: ClipPeriodSchema
-    ) -> None:
+    ):
         try:
             spinner_msg = """
             ✂️✏️ Подрезаю трек…{spinner_item}\n🔔 Добавляю сигнал в начало…\n🎶 
