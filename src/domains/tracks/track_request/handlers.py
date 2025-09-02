@@ -53,7 +53,7 @@ async def _handle_request_tracks(
         callback=callback,
         page=page,
         keyboard=keyboard,
-        message_text="<b>Ранее вы искали треки:</b>\n\n",
+        message_text="<b>📂 Твои прошлые запросы:</b>\n\nВыбери один из них или задай новый 🎵",
         data=user_track_requests,
     )
 
@@ -70,7 +70,7 @@ async def callback_query(
     await user_service.set_session_query_text(callback.from_user.id, query_text)
 
     await callback.message.edit_text(
-        f"Вы выбрали:<b>{query_text}</b>\n\nПодтвердите выбор",
+        f"📌 Ты выбрал: <b>{query_text}</b>\n\nПодтвердить выбор?",
         reply_markup=await confirm_track_request_keyboard(),
         parse_mode="html",
     )
