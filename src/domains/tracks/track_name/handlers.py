@@ -360,7 +360,7 @@ async def confirm_input(
         )
     else:
         download_params = DownloadTrackParams(**download_params)
-
+        await user_service.del_session_query_text(callback.from_user.id)
         track_path = await track_service.download_full_track(
             message=callback.message, download_params=download_params, bot=bot
         )

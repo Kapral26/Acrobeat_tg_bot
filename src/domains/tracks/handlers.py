@@ -1,4 +1,5 @@
 import logging
+from typing import TYPE_CHECKING
 
 from aiogram import Bot, F, Router, types
 from aiogram.fsm.context import FSMContext
@@ -19,6 +20,9 @@ from src.domains.tracks.service import (
     TrackService,
 )
 
+if TYPE_CHECKING:
+    from src.domains.users.services import UserService
+
 logger = logging.getLogger(__name__)
 
 track_router = Router(name="track_router")
@@ -31,6 +35,7 @@ async def callback_query(
     bot: Bot,
     state: FSMContext,
     track_service: FromDishka[TrackService],
+    user_service: FromDishka["UserService"],
 ):
     await callback.answer("Ссылка получены, скачаю файл.")
     download_params = callback.data.split("d_p:")[-1]
@@ -41,7 +46,8 @@ async def callback_query(
     if not download_params:
         await callback.answer("Не удалось получить ссылку.")
         return
-
+    
+    await user_service.del_session_query_text(callback.from_user.id)
     track_path = await track_service.download_full_track(
         message=callback.message, download_params=download_params, bot=bot
     )

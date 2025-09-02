@@ -22,8 +22,9 @@ dependencies = [
     "pydub>=0.25.1",
     "pyyml>=0.0.2",
     "redis>=6.4.0",
-    "ruff>=0.12.9",
+    "ruff==0.12.11",
     "sqlalchemy>=2.0.43",
+    "typing-extensions==4.15.0",
     "yt-dlp>=2025.8.11",
 ]
 

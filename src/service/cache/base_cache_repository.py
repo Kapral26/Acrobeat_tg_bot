@@ -87,9 +87,8 @@ class BaseMsgCleanerRepository(RedisClientWrapper):
 
     async def add_message_to_delete(self, user_id: int, message_id: int) -> None:
         key = self.messages_key.format(user_id=user_id)
-        # Добавляем элемент в конец списка
         await self.rpush(key, str(message_id))
-        await self.expire(key, 120)
+        await self.expire(key, 30)
 
     async def delete_messages_to_delete(self, user_id: int) -> None:
         key = self.messages_key.format(user_id=user_id)
