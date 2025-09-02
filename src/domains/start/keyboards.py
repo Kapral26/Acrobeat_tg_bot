@@ -9,12 +9,14 @@ async def get_start_inline_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(
-            text="История поиска", callback_data="set_track_request"
+            text="📂 Моя история",
+            callback_data="set_track_request",
         ),
     )
     builder.row(
         InlineKeyboardButton(
-            text="🔎 Найти новую песню", callback_data="set_track_name"
+            text="🔎 Найти новый трек",
+            callback_data="set_track_name",
         ),
     )
     return builder.as_markup()
