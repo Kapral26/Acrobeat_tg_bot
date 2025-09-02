@@ -2,13 +2,14 @@ import logging
 from dataclasses import dataclass
 
 from aiogram import Bot
+from aiogram.enums import ParseMode
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
 from src.domains.tracks.keyboards import (
     break_processing,
     get_retry_search_kb,
-    track_list_kb,
+    kb_track_list,
 )
 from src.domains.tracks.track_request.service import TrackRequestService
 from src.domains.tracks.track_search.states import FindTrackStates
@@ -49,10 +50,17 @@ class TrackSearchService:
         callback: CallbackQuery,
         state: FSMContext,
     ):
-        text_search_track = "📝 Введите название песни, исполнителя."
+        text_search_track = """
+            📝 Введи название песни или исполнителя:\n
+
+Например: `«Imagine Dragons — Believer»` или `«Queen»`
+        """
         await callback.message.answer(
-            text_search_track, reply_markup=await break_processing()
+            text_search_track,
+            reply_markup=await break_processing(),
+            parse_mode=ParseMode.MARKDOWN_V2,
         )
+
         await state.set_state(FindTrackStates.WAITING_FOR_PHRASE)
 
     async def handle_search_results(
@@ -84,11 +92,12 @@ class TrackSearchService:
                 await self.show_no_tracks_found(event)
                 return
 
-            # Формируем сообщение
-            message_text = f"{find_tracks.repo_alias}: Выберите подходящую песню:"
-            keyboard = await track_list_kb(find_tracks)
+            message_text = f"""
+            🎵 Нашёл несколько вариантов:\nВыбери подходящую песню из списка:
+            \n\n[Источник: {find_tracks.repo_alias}]
+            """
+            keyboard = await kb_track_list(find_tracks)
 
-            # Определяем, как отправить сообщение
             if isinstance(event, CallbackQuery) and event.message:
                 await event.message.edit_text(
                     message_text,
@@ -114,7 +123,6 @@ class TrackSearchService:
             "Попробуйте что-то другое или уточните поисковой запрос.",
             reply_markup=await get_retry_search_kb(),
         )
-
 
     async def show_error_message(self, event: CallbackQuery | Message):
         """Отправляет сообщение об ошибке."""

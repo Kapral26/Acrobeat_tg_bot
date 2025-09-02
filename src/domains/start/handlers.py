@@ -1,11 +1,12 @@
 from aiogram import F, Router, types
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from dishka import FromDishka
 from dishka.integrations.aiogram import inject
 
-from src.domains.start.keyboards import get_start_inline_keyboard
+from src.domains.start.keyboards import kb_start_msg
 from src.domains.users.services import UserService
 
 start_router = Router(name="start_router")
@@ -15,7 +16,7 @@ start_router = Router(name="start_router")
 @inject
 async def start_command(
     message: types.Message,
-        user_service: FromDishka[UserService],
+    user_service: FromDishka[UserService],
 ):
     """Обработчик команды /start."""
     await get_started_message(message)
@@ -27,30 +28,35 @@ async def break_processing(
     callback_query: CallbackQuery,
     state: FSMContext,
 ):
-
     await get_started_message(callback_query.message)
 
     await callback_query.answer()
 
 
 async def get_started_message(message: Message):
-    await message.answer(
-        """
-🎵 Привет!
-Я — бот, который поможет тебе подготовить музыку для выступления на соревнованиях по акробатике.
+    start_msg = """
+🎵 Привет! Я помогу подготовить музыку для твоего выступления.
 
-Вот что я умею:
+Что умею:
+🔎 Найду трек по названию или исполнителю (3 варианта на выбор)  
+📼 Обработаю ссылку с YouTube и добавлю сигнал старта  
+✂️ Обрежу трек до нужной длины и сохраню в .mp3  
+📂 Покажу список уже готовых треков  
 
-🔍 Найти трек по названию или исполнителю (предложу 3 подходящих варианта)
-📼 Обработать ссылку на YouTube — добавлю сигнал старта
-📂 Показать список треков, которые вы уже подготавливали
-✂️ Нарезать музыку под нужную длину и экспортировать в .mp3
+Пришли мне:
+• ссылку на YouTube
+• или название песни/исполнителя  
 
-Просто пришли мне:
-— ссылку на трек с YouTube
-— или название песни / исполнителя
+И я подготовлю музыку ✨
 
-А я всё подготовлю для выступления ✨
-""",
-        reply_markup=await get_start_inline_keyboard(),
-    )
+"""
+    try:
+        await message.edit_text(
+            start_msg,
+            reply_markup=await kb_start_msg(),
+        )
+    except TelegramBadRequest:
+        await message.answer(
+            start_msg,
+            reply_markup=await kb_start_msg(),
+        )

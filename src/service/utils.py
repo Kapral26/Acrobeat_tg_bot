@@ -3,22 +3,27 @@ from typing import Any
 
 from aiogram import Bot
 
+SPINNER_FRAMES = [
+    f"⠋",
+    f"⠙",
+    f"⠹",
+    f"⠸",
+    f"⠼",
+    f"⠴",
+    f"⠦",
+    f"⠧",
+    f"⠇",
+    f"⠏",
+]
+
 
 async def processing_msg(
     func: callable, args: tuple, bot: Bot, chat_id: int, spinner_msg: str
 ) -> Any:  # noqa: ANN401
     """Метод для отрисовки анимации выполнения действия."""
     spinner = [
-        f"{spinner_msg} ⠋",
-        f"{spinner_msg} ⠙",
-        f"{spinner_msg} ⠹",
-        f"{spinner_msg} ⠸",
-        f"{spinner_msg} ⠼",
-        f"{spinner_msg} ⠴",
-        f"{spinner_msg} ⠦",
-        f"{spinner_msg} ⠧",
-        f"{spinner_msg} ⠇",
-        f"{spinner_msg} ⠏",
+        spinner_msg.format(spinner_item=frame)
+        for frame in SPINNER_FRAMES
     ]
     index = 0
     loading_msg = await bot.send_message(chat_id=chat_id, text=spinner[index])

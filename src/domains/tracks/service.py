@@ -71,7 +71,8 @@ class TrackService:
             bot=bot,
             chat_id=chat_id,
             file_name="example",
-            message_text="Прослушайте трек и покажите, что стоит обрезать",
+            message_text="🎵 Трек загружен.\nПрослушайте и укажите, с какого "
+                         "момента нужно начать обрезку",
             keyboard=keyboard,
         )
 
@@ -97,13 +98,15 @@ class TrackService:
         )
 
         keyboard = await cliper_result_kb()
+        message_text = """
+        🎧 Готово! Вот ваш трек.\nНе устроило? Попробуйте снова 👇
+        """
         send_track_message = await self.__send_track(
             path=cliper_track_path,
             bot=bot,
             chat_id=chat_id,
             file_name=track_name,
-            message_text="Если не понравился трек, нажмите на кнопку и "
-            "обрежьте заново или попробуйте найти новый.",
+            message_text=message_text,
             keyboard=keyboard,
         )
         logger.debug(

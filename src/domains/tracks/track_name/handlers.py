@@ -3,22 +3,23 @@ from datetime import datetime
 
 from aiogram import Bot, F, Router
 from aiogram.enums import ParseMode
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message
 from dishka import FromDishka
 from dishka.integrations.aiogram import inject
 
-from src.domains.common.message_pagination import msg_pagination
+from src.domains.common.message_pagination import show_msg_pagination
 from src.domains.tracks.schemas import DownloadTrackParams
 from src.domains.tracks.service import (
     TrackService,
 )
 from src.domains.tracks.track_name.keyboards import (
-    back_track_name_button,
-    discipline_keyboard,
-    edit_track_name_keyboard,
-    user_track_name_parts_keyboard,
+    kb_back_track_name_promt_item,
+    kb_discipline,
+    kb_show_final_result,
+    kb_track_name_pagination,
 )
 from src.domains.tracks.track_name.message_cleanup import TrackNameMsgCleanerService
 from src.domains.tracks.track_request.service import TrackRequestService
@@ -79,16 +80,16 @@ async def _handle_search_tracks(
 ):
     await callback.answer("Сейчас посмотрим, что вы вводили ранее...")
 
-    user_track_parts = await user_service.get_user_track_names(callback.from_user.id)
-    keyboard = user_track_name_parts_keyboard
+    user_track_names = await user_service.get_user_track_names(callback.from_user.id)
+    keyboard = kb_track_name_pagination
 
-    await msg_pagination(
+    await show_msg_pagination(
         callback=callback,
         cleaner_service=cleaner_service,
         page=page,
         keyboard=keyboard,
         message_text="<b>Ранее вы вводили имена:</b>\n\n",
-        data=user_track_parts,
+        data=user_track_names,
     )
 
 
@@ -109,9 +110,7 @@ async def set_track_part(
     await state.update_data(second_name=second_name.capitalize())
     await state.update_data(year_of_birth=year_of_birth)
     await state.set_state(TrackNameStates.DISCIPLINE)
-    send_msg = await callback.message.answer(
-        "Выберите спортивную дисциплину", reply_markup=discipline_keyboard()
-    )
+    send_msg = await show_discipline_interface(callback)
     await cleaner_service.collect_cliper_messages_to_delete(
         message_id=send_msg.message_id,
         user_id=callback.from_user.id,
@@ -123,7 +122,7 @@ async def set_second_name(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(TrackNameStates.SECOND_NAME)
     await callback.message.edit_text(
         "Введите фамилию",
-        reply_markup=back_track_name_button(callback_data="set_track_name"),
+        reply_markup=kb_back_track_name_promt_item(callback_data="set_track_name"),
     )
     await callback.answer()
 
@@ -136,7 +135,9 @@ async def set_first_name(message: Message, state: FSMContext) -> None:
         return
     await state.update_data(second_name=second_name.capitalize())
     await state.set_state(TrackNameStates.FIRST_NAME)
-    await message.answer("Введите инициалы", reply_markup=back_track_name_button())
+    await message.answer(
+        "Введите инициалы", reply_markup=kb_back_track_name_promt_item()
+    )
 
 
 @track_name_router.message(
@@ -157,7 +158,9 @@ async def set_year_of_birth(message: Message, state: FSMContext) -> None:
         return
     await state.update_data(first_name=first_name.upper())
     await state.set_state(TrackNameStates.YEAR_OF_BIRTH)
-    await message.answer("Введите год рождения", reply_markup=back_track_name_button())
+    await message.answer(
+        "Введите год рождения", reply_markup=kb_back_track_name_promt_item()
+    )
 
 
 @track_name_router.message(TrackNameStates.YEAR_OF_BIRTH)
@@ -190,9 +193,7 @@ async def choose_discipline(
     )
 
     await state.set_state(TrackNameStates.DISCIPLINE)
-    await message.answer(
-        "Выберите спортивную дисциплину", reply_markup=discipline_keyboard()
-    )
+    await show_discipline_interface(message)
 
 
 @track_name_router.callback_query(F.data.startswith("discipline:"))
@@ -210,8 +211,14 @@ async def process_discipline(
             TrackNameStates.CUSTOM_DISCIPLINE,
         )
         send_msg = await callback.message.edit_text(
-            "Введите дисциплину вручную", reply_markup=back_track_name_button()
+            """
+            ✏️ Введи название дисциплины вручную:\n
+
+Например: `«Акробатическая композиция»` или `«Свободное упражнение»`.
+            """,
+            reply_markup=kb_back_track_name_promt_item(callback_data="set_track_name"),
         )
+
         await cleaner_service.collect_cliper_messages_to_delete(
             message_id=send_msg.message_id,
             user_id=callback.from_user.id,
@@ -260,25 +267,24 @@ async def go_back(callback: CallbackQuery, state: FSMContext):
     if current_state == TrackNameStates.FIRST_NAME.state:
         await state.set_state(TrackNameStates.SECOND_NAME)
         await callback.message.edit_text(
-            "Введите фамилию", reply_markup=back_track_name_button("set_track_name")
+            "Введите фамилию",
+            reply_markup=kb_back_track_name_promt_item("set_track_name"),
         )
     elif current_state == TrackNameStates.YEAR_OF_BIRTH.state:
         await state.set_state(TrackNameStates.FIRST_NAME)
         await callback.message.edit_text(
-            "Введите инициалы", reply_markup=back_track_name_button()
+            "Введите инициалы", reply_markup=kb_back_track_name_promt_item()
         )
 
     elif current_state == TrackNameStates.DISCIPLINE.state:
         await state.set_state(TrackNameStates.YEAR_OF_BIRTH)
         await callback.message.edit_text(
-            "Введите год рождения", reply_markup=back_track_name_button()
+            "Введите год рождения", reply_markup=kb_back_track_name_promt_item()
         )
 
     elif current_state == TrackNameStates.CUSTOM_DISCIPLINE.state:
         await state.set_state(TrackNameStates.DISCIPLINE)
-        await callback.message.edit_text(
-            "Выберите спортивную дисциплину", reply_markup=discipline_keyboard()
-        )
+        await show_discipline_interface(callback)
 
     await callback.answer()
 
@@ -289,11 +295,37 @@ async def show_final_result(
     track_name: str = await get_track_name(state)
     await user_service.set_session_track_names(user_id=user_id, track_name=track_name)
     send_msg = await message.answer(
-        f"Результат: <b>{track_name}</b>",
-        reply_markup=edit_track_name_keyboard(),
+        f"""
+        📌 Ты выбрал название трека:\n
+
+        <b>{track_name}</b>\n
+
+        Всё верно?
+        """,
+        reply_markup=await kb_show_final_result(),
         parse_mode=ParseMode.HTML,
     )
     return send_msg
+
+
+async def show_discipline_interface(event: CallbackQuery | Message) -> Message:
+    message = event.message if isinstance(event, CallbackQuery) else event
+    discipline_interface_msg = """
+        🏅 Выбери дисциплину:\n\n
+Можно выбрать из списка или ввести свою.
+        """
+    kb_dis = await kb_discipline()
+    try:
+        msg = await message.edit_text(
+            discipline_interface_msg,
+            reply_markup=kb_dis,
+        )
+    except TelegramBadRequest:
+        msg = await message.answer(
+            discipline_interface_msg,
+            reply_markup=kb_dis,
+        )
+    return msg
 
 
 @track_name_router.callback_query(F.data == "confirm_input")
@@ -315,9 +347,7 @@ async def confirm_input(
 
     state_data = await state.get_data()
     download_params = state_data.get("download_params")
-    query_text = await user_service.get_session_query_text(
-        callback.from_user.id
-    )
+    query_text = await user_service.get_session_query_text(callback.from_user.id)
 
     if not download_params:
         await track_search_service.search_tracks(

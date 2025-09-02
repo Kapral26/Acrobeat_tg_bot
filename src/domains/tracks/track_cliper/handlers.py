@@ -41,7 +41,9 @@ async def _period_start_message(
     callback: CallbackQuery, cleaner_service: TrackClipMsgCleanerService
 ) -> None:
     send_msg = await callback.message.answer(
-        "Введите время, с которого начать обрезкуПример: `00:15`",
+        """
+        ⏱ Укажите время начала обрезки\nПример формата: `мм:сс` → `00:15`
+        """,
         reply_markup=await back_period_input_button(),
         parse_mode=ParseMode.MARKDOWN_V2,
     )
@@ -65,16 +67,7 @@ async def set_period_start(
         message_id=message.message_id, user_id=message.from_user.id
     )
     if not is_valid_time_format(periodic_start):
-        send_msg = await message.edit_text(
-            """
-            ❌ Неверный формат времени. Используйте формат: `00:00`
-            Пример: `00:15`""",
-            reply_markup=await back_period_input_button(),
-            parse_mode=ParseMode.MARKDOWN_V2,
-        )
-        await cleaner_service.collect_cliper_messages_to_delete(
-            message_id=send_msg.message_id, user_id=message.from_user.id
-        )
+        await show_invalid_time_format_msg(cleaner_service, message)
         return
 
     await state.update_data(period_start=periodic_start)
@@ -83,8 +76,7 @@ async def set_period_start(
 
     send_msg = await message.answer(
         """
-        Введите время, на котором закончить обрезку
-        Пример: `01:19`""",
+        ⏱ Укажите время окончания обрезки\nФормат: `мм:сс` → пример `01:19`""",
         reply_markup=await back_period_input_button(),
         parse_mode=ParseMode.MARKDOWN_V2,
     )
@@ -110,16 +102,7 @@ async def set_period_end(
         message_id=message.message_id, user_id=message.from_user.id
     )
     if not is_valid_time_format(time_str):
-        send_msg = await message.answer(
-            """
-            ❌ Неверный формат времени. Используйте формат: `00:00`
-            Пример: `01:45`""",
-            reply_markup=await back_period_input_button(),
-            parse_mode=ParseMode.MARKDOWN_V2,
-        )
-        await cleaner_service.collect_cliper_messages_to_delete(
-            message_id=send_msg.message_id, user_id=send_msg.from_user.id
-        )
+        await show_invalid_time_format_msg(cleaner_service, message)
         return
 
     await state.update_data(period_end=time_str)
@@ -132,6 +115,18 @@ async def set_period_end(
         chat_id=message.chat.id,
         state=state,
         user_id=message.from_user.id,
+    )
+
+
+async def show_invalid_time_format_msg(cleaner_service, message):
+    send_msg = await message.answer(
+        """
+        ❌ Неверный формат\nИспользуйте `мм:сс` (например, `01:45`).""",
+        reply_markup=await back_period_input_button(),
+        parse_mode=ParseMode.MARKDOWN_V2,
+    )
+    await cleaner_service.collect_cliper_messages_to_delete(
+        message_id=send_msg.message_id, user_id=send_msg.from_user.id
     )
 
 

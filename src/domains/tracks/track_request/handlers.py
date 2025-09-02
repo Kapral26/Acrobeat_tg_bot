@@ -4,10 +4,11 @@ from aiogram.types import CallbackQuery
 from dishka import FromDishka
 from dishka.integrations.aiogram import inject
 
-from src.domains.common.message_pagination import msg_pagination
+from src.domains.common.message_pagination import show_msg_pagination
 from src.domains.tracks.track_request.keyboards import (
-    confirm_track_request_keyboard,
-    user_track_request_keyboard,
+    kb_confirm_track_request,
+    kb_no_track_request,
+    kb_user_track_request,
 )
 from src.domains.tracks.track_request.service import TrackRequestService
 from src.domains.users.services import UserService
@@ -47,13 +48,23 @@ async def _handle_request_tracks(
     user_track_requests = await track_request_service.get_track_user_request(
         callback.from_user.id
     )
-    keyboard = user_track_request_keyboard
 
-    await msg_pagination(
+    if not user_track_requests:
+        await callback.message.edit_text(
+            """📂 История пуста.\n\n
+Ты ещё не искал треки.\n
+Начни новый поиск 👇""",
+            reply_markup=await kb_no_track_request(),
+        )
+        return
+
+    keyboard = kb_user_track_request
+
+    await show_msg_pagination(
         callback=callback,
         page=page,
         keyboard=keyboard,
-        message_text="<b>Ранее вы искали треки:</b>\n\n",
+        message_text="<b>📂 Твои прошлые запросы:</b>\n\nВыбери один из них или задай новый 🎵",
         data=user_track_requests,
     )
 
@@ -70,7 +81,7 @@ async def callback_query(
     await user_service.set_session_query_text(callback.from_user.id, query_text)
 
     await callback.message.edit_text(
-        f"Вы выбрали:<b>{query_text}</b>\n\nПодтвердите выбор",
-        reply_markup=await confirm_track_request_keyboard(),
+        f"📌 Ты выбрал: <b>{query_text}</b>\n\nПодтвердить выбор?",
+        reply_markup=await kb_confirm_track_request(),
         parse_mode="html",
     )
