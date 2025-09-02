@@ -26,7 +26,7 @@ class ClipPeriodSchema(BaseModel):
     finish: str
 
     @field_validator("start", "finish")
-    def check_time_format(self, v: str) -> str:
+    def check_time_format(cls, v: str) -> str:
         """
         Валидирует формат временной метки.
 

@@ -41,7 +41,7 @@ async def start_command(
 @start_router.callback_query(F.data == "break_processing")
 async def break_processing(
     callback_query: CallbackQuery,
-    _state: FSMContext,
+    state: FSMContext,
 ) -> None:
     """
     Обработчик для отмены текущего процесса.

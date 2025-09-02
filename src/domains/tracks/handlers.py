@@ -8,7 +8,6 @@
 """
 
 import logging
-from typing import TYPE_CHECKING
 
 from aiogram import Bot, F, Router, types
 from aiogram.fsm.context import FSMContext
@@ -28,9 +27,7 @@ from src.domains.tracks.schemas import (
 from src.domains.tracks.service import (
     TrackService,
 )
-
-if TYPE_CHECKING:
-    from src.domains.users.services import UserService
+from src.domains.users.services import UserService
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +41,7 @@ async def callback_query(
     bot: Bot,
     state: FSMContext,
     track_service: FromDishka[TrackService],
-    user_service: FromDishka["UserService"],
+    user_service: FromDishka[UserService],
 ) -> None:
     """
     Обработчик inline-кнопки для загрузки трека по полученной ссылке.
@@ -75,7 +72,7 @@ async def callback_query(
 @track_router.message(YouTubeLinkFilter())
 async def handle_youtube_link(
     message: Message,
-    _bot: Bot,
+    bot: Bot,
     state: FSMContext,
 ) -> None:
     """
@@ -84,7 +81,7 @@ async def handle_youtube_link(
     Запрашивает у пользователя название трека и сохраняет параметры загрузки.
 
     :param message: Сообщение от пользователя.
-    :param _bot: Экземпляр бота Aiogram.
+    :param bot: Экземпляр бота Aiogram.
     :param state: Состояние FSM.
     """
     await message.answer(
@@ -101,7 +98,7 @@ async def handle_youtube_link(
 @inject
 async def handle_audio_message(
     message: Message,
-    _bot: Bot,
+    bot: Bot,
     state: FSMContext,
 ) -> None:
     """
@@ -110,7 +107,7 @@ async def handle_audio_message(
     Сохраняет параметры загрузки Telegram-аудио и запрашивает у пользователя название трека.
 
     :param message: Сообщение от пользователя.
-    :param _bot: Экземпляр бота Aiogram.
+    :param bot: Экземпляр бота Aiogram.
     :param state: Состояние FSM.
     """
     if message.audio:

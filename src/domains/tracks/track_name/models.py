@@ -31,19 +31,16 @@ class TrackNameRegistry(Base):
         BigInteger(),
         primary_key=True,
         index=True,
-        comment="Уникальный идентификатор записи",
     )
     user_id: Mapped[int] = mapped_column(
         BigInteger(),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
-        comment="ID пользователя, связанный с частью названия трека",
     )
     track_part: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
-        comment="Часть названия трека (например, 'Иванов_ИО_1990')",
     )
 
     # Связь с моделью пользователя

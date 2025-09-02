@@ -26,23 +26,22 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(
-        BigInteger(), primary_key=True, index=True, comment="ID пользователя"
+        BigInteger(), primary_key=True, index=True,
     )
     username: Mapped[str] = mapped_column(
-        String(64), nullable=False, comment="Никнейм пользователя"
+        String(64), nullable=False,
     )
-    first_name: Mapped[str] = mapped_column(String(64), comment="Инициалы пользователя")
+    first_name: Mapped[str] = mapped_column(String(64),)
     last_name: Mapped[str] = mapped_column(
-        String(128), nullable=True, comment="Фамилия пользователя"
+        String(128), nullable=True,
     )
 
     track_names: Mapped[list["TrackNameRegistry"]] = relationship(
         "TrackNameRegistry",
         back_populates="user",
         cascade="all, delete-orphan",
-        comment="Связанные части названий треков",
     )
 
     track_requests: Mapped[list["TrackRequest"]] = relationship(
-        back_populates="user", comment="Запросы на поиск треков"
+        back_populates="user",
     )

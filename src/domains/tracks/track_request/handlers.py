@@ -108,7 +108,7 @@ async def _handle_request_tracks(
 @inject
 async def callback_query(
     callback: CallbackQuery,
-    _state: FSMContext,
+    state: FSMContext,
     user_service: FromDishka[UserService],
 ) -> None:
     """
@@ -117,7 +117,7 @@ async def callback_query(
     Сохраняет выбранный текст запроса в сессию пользователя и запрашивает подтверждение.
 
     :param callback: CallbackQuery с данными о выбранном запросе.
-    :param _state: Состояние FSM для управления диалогом.
+    :param state: Состояние FSM для управления диалогом.
     :param user_service: Сервис для работы с пользователями.
     """
     await callback.answer()

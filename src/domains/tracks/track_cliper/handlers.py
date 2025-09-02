@@ -45,7 +45,7 @@ class SetClipPeriodStates(StatesGroup):
 @inject
 async def handler_set_clip_period(
     callback: CallbackQuery,
-    _bot: Bot,
+    bot: Bot,
     state: FSMContext,
     cleaner_service: FromDishka[TrackClipMsgCleanerService],
 ) -> None:
@@ -55,7 +55,7 @@ async def handler_set_clip_period(
     Устанавливает начальное состояние (`PERIOD_START`) и запрашивает у пользователя время начала обрезки.
 
     :param callback: CallbackQuery от нажатия кнопки "Обрезать трек".
-    :param _bot: Экземпляр бота Aiogram.
+    :param bot: Экземпляр бота Aiogram.
     :param state: Состояние FSM для управления диалогом.
     :param cleaner_service: Сервис для управления временными сообщениями.
     """

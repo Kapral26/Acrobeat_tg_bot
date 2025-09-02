@@ -27,16 +27,15 @@ class TrackRequest(Base):
     __tablename__ = "track_requests"
 
     id: Mapped[int] = mapped_column(
-        primary_key=True, autoincrement=True, comment="Уникальный идентификатор записи"
+        primary_key=True, autoincrement=True
     )
     user_id: Mapped[int] = mapped_column(
         BigInteger,
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
-        comment="ID пользователя, совершившего запрос",
     )
     query_text: Mapped[str] = mapped_column(
-        Text, nullable=False, comment="Текст поискового запроса"
+        Text, nullable=False
     )
 
     # Связь с моделью пользователя
