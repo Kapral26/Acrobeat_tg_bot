@@ -1,4 +1,5 @@
 from aiogram import F, Router, types
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
@@ -33,8 +34,7 @@ async def break_processing(
 
 
 async def get_started_message(message: Message):
-    await message.answer(
-        """
+    start_msg = """
 🎵 Привет! Я помогу подготовить музыку для твоего выступления.
 
 Что умею:
@@ -49,6 +49,14 @@ async def get_started_message(message: Message):
 
 И я подготовлю музыку ✨
 
-""",
-        reply_markup=await get_start_inline_keyboard(),
-    )
+"""
+    try:
+        await message.edit_text(
+            start_msg,
+            reply_markup=await get_start_inline_keyboard(),
+        )
+    except TelegramBadRequest:
+        await message.answer(
+            start_msg,
+            reply_markup=await get_start_inline_keyboard(),
+        )

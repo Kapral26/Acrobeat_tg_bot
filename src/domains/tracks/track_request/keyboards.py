@@ -1,22 +1,22 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+from src.domains.tracks.track_request.buttons import (
+    bt_return_main_page,
+    bt_set_track_name,
+    bt_track_request_page1,
+)
 from src.domains.tracks.track_request.schemas import TrackRequestSchema
 
 
-async def confirm_track_request_keyboard():
+async def kb_confirm_track_request():
     builder = InlineKeyboardBuilder()
-    await bt_return(builder)
-    builder.row(
-        InlineKeyboardButton(
-            text="✅ Подтвердить",
-            callback_data="set_track_name",
-        )
-    )
+    await add_bt_return(builder)
+    builder.row(await bt_set_track_name("✅ Подтвердить"))
     return builder.as_markup()
 
 
-async def user_track_request_keyboard(
+async def kb_user_track_request(
     user_request_parts: list[TrackRequestSchema],
     page: int,
     total_pages: int,
@@ -50,31 +50,28 @@ async def user_track_request_keyboard(
         )
 
     builder.row(*navigate_key)
-    await bt_pagination_return(builder)
+    await add_bt_pagination_return(builder)
 
-    builder.row(
-        InlineKeyboardButton(
-            text="✍️ Новый поиск",
-            callback_data="set_track_name",
-        ),
-    )
+    builder.row(await bt_set_track_name("🔎 Найти трек"))
     return builder.as_markup()
 
 
-async def bt_track_request_page1(bt_title: str = "️🔁 В начало") -> InlineKeyboardButton:
-    return InlineKeyboardButton(text=bt_title, callback_data="track_request_page:1")
+async def kb_no_track_request() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.row(await bt_set_track_name("🔎 Найти трек"))
+    builder.row(await bt_return_main_page())
+    return builder.as_markup()
 
 
-async def bt_return_main_page() -> InlineKeyboardButton:
-    return InlineKeyboardButton(
-        text="📤 На главный экран",
-        callback_data="break_processing",
+async def add_bt_pagination_return(builder: InlineKeyboardBuilder):
+    builder.row(
+        await bt_track_request_page1(),
+        await bt_return_main_page(),
     )
 
 
-async def bt_pagination_return(builder: InlineKeyboardBuilder):
-    builder.row(await bt_track_request_page1(), await bt_return_main_page())
-
-
-async def bt_return(builder: InlineKeyboardBuilder):
-    builder.row(await bt_track_request_page1("⬅️ Назад"), await bt_return_main_page())
+async def add_bt_return(builder: InlineKeyboardBuilder):
+    builder.row(
+        await bt_track_request_page1("⬅️ Назад"),
+        await bt_return_main_page(),
+    )
