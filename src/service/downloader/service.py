@@ -45,12 +45,15 @@ class DownloaderService:
         for _idx, repo in enumerate(self.external_repository):
             logger.debug(f"Поиск в источнике {repo.alias}, {phrase=}")
             try:
+                spinner_msg = """
+                🔎 Ищу трек…{spinner_item}\n(это может занять несколько секунд ⏳)
+                """
                 founded_tracks = await processing_msg(
                     repo.find_tracks_on_phrase,
                     (phrase, chat_id),
                     bot=bot,
                     chat_id=chat_id,
-                    spinner_msg=f"🔎Поиск в источнике {_idx + 1}/{len(self.external_repository)}",
+                    spinner_msg=spinner_msg,
                 )
                 if founded_tracks:
                     return RepoTracks(
@@ -85,7 +88,7 @@ class DownloaderService:
                 (bot, url_track, track_path),
                 bot=bot,
                 chat_id=chat_id,
-                spinner_msg="🛬 Загрузка трека на сервер",
+                spinner_msg="🛬 Загружаем трек на сервер…{spinner_item}",
             )
         except DownloadError:
             logger.exception("YouTrack не смог скачать аудио-дорожку")

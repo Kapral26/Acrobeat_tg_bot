@@ -20,7 +20,7 @@ async def break_processing() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-async def track_list_kb(repo_result: RepoTracks) -> InlineKeyboardMarkup:
+async def kb_track_list(repo_result: RepoTracks) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 
     for track in repo_result.tracks:
@@ -33,10 +33,10 @@ async def track_list_kb(repo_result: RepoTracks) -> InlineKeyboardMarkup:
                 callback_data=f"d_p:{callback_params.model_dump_json()}",
             )
         )
-    builder.attach(get_retry_search_button("🔁 Попробовать новый поиск"))
+    builder.attach(get_retry_search_button("🔁 Новый поиск"))
     builder.row(
         InlineKeyboardButton(
-            text=f"⏭️ Искать в след. репозитории",
+            text=f"⏭️ Следующий источник",
             callback_data=f"skip_repo:{repo_result.repo_alias}",
         )
     )
@@ -63,7 +63,7 @@ async def cliper_result_kb() -> InlineKeyboardMarkup:
             callback_data=f"clip_track_again",
         )
     )
-    builder.attach(get_retry_search_button("🔁 Попробовать новый поиск"))
+    builder.attach(get_retry_search_button("🔎 Новый поиск"))
     return builder.as_markup()
 
 
@@ -80,7 +80,7 @@ async def set_clip_period() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(
-            text="✏️ Ввести данные", callback_data="set_clip_period"
+            text="✏️ Указать начало обрезки", callback_data="set_clip_period"
         )
     )
     return builder.as_markup()

@@ -23,12 +23,16 @@ class TrackCliperService:
             clip_period: ClipPeriodSchema
     ) -> None:
         try:
+            spinner_msg = """
+            ✂️✏️ Подрезаю трек…{spinner_item}\n🔔 Добавляю сигнал в начало…\n🎶 
+            Делаю мягкий фейд-аут на конце…
+            """
             track_with_beep = await processing_msg(
                 self._get_prepared_track,
                 (track_path, clip_period,),
                 bot=bot,
                 chat_id=chat_id,
-                spinner_msg="✂️ Обрезаю, объединяю",
+                spinner_msg=spinner_msg,
             )
         except Exception as error:
             logger.exception(error)  # noqa: TRY401
