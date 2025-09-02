@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
@@ -13,6 +14,8 @@ from src.service.downloader.abstarction import DownloaderAbstractRepo
 from src.service.downloader.cach_repository import DownloaderCacheRepo
 from src.service.settings.config import Settings
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass
 class DownloaderRepoYT(DownloaderAbstractRepo):
@@ -26,7 +29,7 @@ class DownloaderRepoYT(DownloaderAbstractRepo):
 
     def _download(self, url: str, output_path: Path):
         ydl_opts = {
-            "format": "bestaudio[ext=m4a][protocol!=m3u8_native]/140/bestaudio",
+            "format": "bestaudio/best",
             "outtmpl": output_path.with_suffix("").as_posix(),
             "postprocessors": [
                 {
@@ -39,24 +42,36 @@ class DownloaderRepoYT(DownloaderAbstractRepo):
                 "youtube": ["formats=missing_pot"],
             },
             "quiet": not self.settings.debug,
-            "verbose": True,  # подробный вывод
+            "verbose": True,
+            "socket_timeout": 15,
+            "retries": 3,
         }
 
         with YoutubeDL(ydl_opts) as ydl:
             try:
                 ydl.download([url])
-            except DownloadError:
+            except DownloadError:  # noqa: TRY203
                 raise
 
     async def download_track(self, bot: Bot, url: str, output_path: Path):
-        await asyncio.get_event_loop().run_in_executor(
-            None, self._download, url, output_path
-        )
+        loop = asyncio.get_event_loop()
+        try:
+            return await asyncio.wait_for(
+                loop.run_in_executor(None, self._download, url, output_path),
+                timeout=30,
+            )
+        except asyncio.TimeoutError:  # noqa: UP041
+            logger.exception("⏱️ Превышено время ожидания")
+            return None
+        except DownloadError as e:
+            logger.exception(f"⚠️ Ошибка загрузки: {e}")
+            return None
 
     def _search_track(self, query: str, max_results: int = 3):
         ydl_opts = {
             "quiet": True,
-            "skip_download": True,
+            "extract_flat": "in_playlist",  # не скачиваем, только метаданные
+            "default_search": "ytsearch",
         }
 
         with YoutubeDL(ydl_opts) as ydl:
@@ -65,12 +80,26 @@ class DownloaderRepoYT(DownloaderAbstractRepo):
             return info["entries"]
 
     async def find_tracks_on_phrase(self, query: str, chat_id: int):
-        results = await asyncio.get_event_loop().run_in_executor(
-            None, partial(self._search_track, query, chat_id)
-        )
+        loop = asyncio.get_event_loop()
+
+        try:
+            results = await asyncio.wait_for(
+                loop.run_in_executor(None, partial(self._search_track, query)),
+                timeout=30,
+            )
+        except asyncio.TimeoutError:  # noqa: UP041
+            logger.exception("⏱️ Превышено время ожидания")
+            return None
+        except DownloadError as e:
+            logger.exception(f"⚠️ Ошибка загрузки: {e}")
+            return None
+
+        if not results:
+            return None
+
         for item in results:
             item["webpage_url"] = await self.cache_repository.set_track_url(
-                item["webpage_url"], chat_id
+                item["url"], chat_id
             )
 
         return results
@@ -171,7 +200,7 @@ class DownloaderRepoPinkamuz(DownloaderAbstractRepo):
 
 @dataclass
 class TelegramDownloaderRepo(DownloaderAbstractRepo):
-    priority = 100
+    priority = -100
 
     @property
     def alias(self) -> str:
@@ -180,10 +209,10 @@ class TelegramDownloaderRepo(DownloaderAbstractRepo):
     def _download(self, url: str, output_path: Path) -> None:
         pass
 
-    def _search_track(self, query: str, max_results: int = 3) -> list[dict | None]:
+    def _search_track(self, query: str, max_results: int = 3) -> list[None]:
         return []
 
-    async def find_tracks_on_phrase(self, query: str) -> list[dict | None]:
+    async def find_tracks_on_phrase(self, query: str, chat_id: int) -> list[None]:
         return []
 
     async def download_track(self, bot: Bot, file_id: str, output_path: Path) -> None:
