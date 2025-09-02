@@ -1,3 +1,13 @@
+"""
+Модуль `service.py` содержит реализацию сервиса для поиска музыкальных треков.
+
+Обеспечивает функциональность:
+- обработки запроса пользователя на поиск;
+- отображения результатов поиска в виде inline-клавиатуры;
+- управления состоянием FSM (ожидание ввода фразы, подтверждение выбора);
+- взаимодействия с сервисами загрузки и сохранения запросов.
+"""
+
 import logging
 from dataclasses import dataclass
 
@@ -20,6 +30,12 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class TrackSearchService:
+    """
+    Сервис для поиска музыкальных треков.
+
+    Обрабатывает запросы пользователей, выполняет поиск треков и управляет отображением результатов.
+    """
+
     async def search_tracks(
         self,
         callback: CallbackQuery,
@@ -28,7 +44,20 @@ class TrackSearchService:
         track_request_service: TrackRequestService,
         state: FSMContext,
         query_text: str | None,
-    ):
+    ) -> None:
+        """
+        Основной метод для поиска треков.
+
+        Если текст запроса предоставлен — выполняет поиск и отображает результаты.
+        В противном случае запрашивает у пользователя название трека или исполнителя.
+
+        :param callback: CallbackQuery от нажатия кнопки.
+        :param bot: Экземпляр бота Aiogram.
+        :param downloader_service: Сервис для загрузки треков.
+        :param track_request_service: Сервис для работы с запросами на поиск.
+        :param state: Состояние FSM.
+        :param query_text: Текст запроса пользователя.
+        """
         await callback.answer()
 
         if query_text:
@@ -45,11 +74,19 @@ class TrackSearchService:
         else:
             await self.prompt_for_track_name(callback, state)
 
+    @staticmethod
     async def prompt_for_track_name(
-        self,
         callback: CallbackQuery,
         state: FSMContext,
-    ):
+    ) -> None:
+        """
+        Запрашивает у пользователя название трека или исполнителя.
+
+        Устанавливает состояние `WAITING_FOR_PHRASE`.
+
+        :param callback: CallbackQuery от нажатия кнопки.
+        :param state: Состояние FSM.
+        """
         text_search_track = """
             📝 Введи название песни или исполнителя:\n
 
@@ -73,8 +110,19 @@ class TrackSearchService:
         user_id: int,
         chat_id: int,
         skip_repo_alias: str | None = None,
-    ):
-        """Обрабатывает результаты поиска треков и отображает их пользователю."""
+    ) -> None:
+        """
+        Обрабатывает результаты поиска треков и отображает их пользователю.
+
+        :param bot: Экземпляр бота Aiogram.
+        :param event: Событие (CallbackQuery или Message).
+        :param downloader_service: Сервис для загрузки треков.
+        :param track_request_service: Сервис для работы с запросами на поиск.
+        :param query_text: Текст запроса пользователя.
+        :param user_id: ID пользователя.
+        :param chat_id: ID чата.
+        :param skip_repo_alias: Алиас репозитория, который нужно пропустить при поиске.
+        """
         try:
             await track_request_service.insert_track_request(
                 user_id=user_id,
@@ -112,11 +160,18 @@ class TrackSearchService:
                 )
 
         except Exception as e:
-            logger.exception("Ошибка при обработке результатов поиска")
+            logger.exception(f"Ошибка при обработке результатов поиска: {e}")  # noqa: TRY401
             await self.show_error_message(event)
 
-    async def show_no_tracks_found(self, event: CallbackQuery | Message):
-        """Отправляет сообщение о том, что треки не найдены."""
+    @staticmethod
+    async def show_no_tracks_found(
+        event: CallbackQuery | Message,
+    ) -> None:
+        """
+        Отправляет сообщение о том, что треки не найдены.
+
+        :param event: Событие (CallbackQuery или Message).
+        """
         message = event.message if isinstance(event, CallbackQuery) else event
         await message.edit_text(
             "😔 Песни не найдены.\n"
@@ -124,8 +179,15 @@ class TrackSearchService:
             reply_markup=await get_retry_search_kb(),
         )
 
-    async def show_error_message(self, event: CallbackQuery | Message):
-        """Отправляет сообщение об ошибке."""
+    @staticmethod
+    async def show_error_message(
+        event: CallbackQuery | Message,
+    ) -> None:
+        """
+        Отправляет сообщение об ошибке.
+
+        :param event: Событие (CallbackQuery или Message).
+        """
         message = event.message if isinstance(event, CallbackQuery) else event
         await message.edit_text(
             "⚠️ Произошла ошибка.\n Попробуйте позже.",

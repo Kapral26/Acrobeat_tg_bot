@@ -1,3 +1,13 @@
+"""
+Модуль `handlers.py` содержит обработчики событий для логики поиска музыкальных треков.
+
+Обрабатывает:
+- инициацию нового поиска;
+- ввод пользовательского запроса;
+- переход к следующему источнику поиска;
+- управление сессионными данными пользователя.
+"""
+
 from aiogram import Bot, F, Router, types
 from aiogram.fsm.context import FSMContext
 from dishka import FromDishka
@@ -22,7 +32,20 @@ async def handler_search_tracks(
     track_search_service: FromDishka[TrackSearchService],
     user_service: FromDishka[UserService],
     state: FSMContext,
-):
+) -> None:
+    """
+    Обработчик для запуска поиска треков на основе сохранённого запроса пользователя.
+
+    Извлекает текст запроса из сессии пользователя и инициирует поиск треков.
+
+    :param callback: CallbackQuery от нажатия кнопки "Найти трек".
+    :param bot: Экземпляр бота Aiogram.
+    :param downloader_service: Сервис для загрузки треков.
+    :param track_request_service: Сервис для работы с запросами на поиск.
+    :param track_search_service: Сервис для поиска треков.
+    :param user_service: Сервис для работы с пользователями.
+    :param state: Состояние FSM.
+    """
     query_text = await user_service.get_session_query_text(callback.from_user.id)
     await track_search_service.search_tracks(
         callback=callback,
@@ -41,7 +64,17 @@ async def handler_search_tracks(
     track_search_service: FromDishka[TrackSearchService],
     user_service: FromDishka[UserService],
     state: FSMContext,
-):
+) -> None:
+    """
+    Обработчик для инициации нового поиска трека.
+
+    Очищает сессионный текст запроса и запрашивает у пользователя новое название трека.
+
+    :param callback: CallbackQuery от нажатия кнопки "Найти новый трек".
+    :param track_search_service: Сервис для поиска треков.
+    :param user_service: Сервис для работы с пользователями.
+    :param state: Состояние FSM.
+    """
     await user_service.del_session_query_text(callback.from_user.id)
     await track_search_service.prompt_for_track_name(callback, state)
 
@@ -55,7 +88,19 @@ async def handle_preview_search_track(
     track_search_service: FromDishka[TrackSearchService],
     track_request_service: FromDishka[TrackRequestService],
     user_service: FromDishka[UserService],
-):
+) -> None:
+    """
+    Обработчик сообщения с ключевой фразой для поиска треков.
+
+    Сохраняет введённый текст в сессию пользователя и запускает поиск.
+
+    :param message: Сообщение от пользователя с ключевой фразой.
+    :param bot: Экземпляр бота Aiogram.
+    :param downloader: Сервис для загрузки треков.
+    :param track_search_service: Сервис для поиска треков.
+    :param track_request_service: Сервис для работы с запросами на поиск.
+    :param user_service: Сервис для работы с пользователями.
+    """
     await user_service.set_session_query_text(
         user_id=message.from_user.id, query_text=message.text
     )
@@ -79,7 +124,19 @@ async def request_skip_repo(
     track_search_service: FromDishka[TrackSearchService],
     track_request_service: FromDishka[TrackRequestService],
     user_service: FromDishka[UserService],
-):
+) -> None:
+    """
+    Обработчик для пропуска текущего источника поиска.
+
+    Извлекает алиас репозитория из данных callback и продолжает поиск, исключая этот источник.
+
+    :param callback: CallbackQuery от нажатия кнопки "Следующий источник".
+    :param bot: Экземпляр бота Aiogram.
+    :param downloader: Сервис для загрузки треков.
+    :param track_search_service: Сервис для поиска треков.
+    :param track_request_service: Сервис для работы с запросами на поиск.
+    :param user_service: Сервис для работы с пользователями.
+    """
     await callback.answer()
     skip_repo = callback.data.split(":")[-1]
     query_text = await user_service.get_session_query_text(callback.from_user.id)
