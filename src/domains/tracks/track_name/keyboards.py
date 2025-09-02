@@ -5,6 +5,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from src.domains.common.buttons import bt_set_track_name
 from src.domains.common.message_pagination import create_paginated_keyboard
+from src.domains.tracks.track_name.buttons import bt_confirm_input, bt_promt_track_name
 
 
 def kb_back_track_name_promt_item(callback_data: str = "go_back_track_name_item"):
@@ -16,13 +17,11 @@ def kb_back_track_name_promt_item(callback_data: str = "go_back_track_name_item"
 async def kb_show_final_result():
     builder = InlineKeyboardBuilder()
     builder.row(await bt_set_track_name("✏️ Изменить"))
-    builder.row(
-        InlineKeyboardButton(text="✅ Завершить", callback_data="confirm_input")
-    )
+    builder.row(await bt_confirm_input())
     return builder.as_markup()
 
 
-def discipline_keyboard():
+async def kb_discipline():
     builder = InlineKeyboardBuilder()
     disciplines = [
         "БП",
@@ -44,7 +43,7 @@ def discipline_keyboard():
 
     builder.row(
         InlineKeyboardButton(text="➕ Другое", callback_data="discipline:custom"),
-        InlineKeyboardButton(text="⬅️ Назад", callback_data="go_back_track_name_item"),
+        InlineKeyboardButton(text="⬅️ Назад", callback_data="set_track_name"),
     )
     return builder.as_markup()
 
@@ -54,7 +53,6 @@ async def kb_track_name_pagination(
     page: int,
     total_pages: int,
 ) -> InlineKeyboardMarkup:
-
     kb = await create_paginated_keyboard(
         items=user_track_parts,
         item_params=f"track_part",
@@ -62,8 +60,9 @@ async def kb_track_name_pagination(
         total_pages=total_pages,
         bt_prefix="t_p",
         bt_pagin_prefix="track_name_page",
-        bottom_buttons=[InlineKeyboardButton( # TODO вынести в модуль buttoms.py
-            text="✏️ Добавить вручную", callback_data="hand_input_track_part"
-        )],
+        bottom_buttons=[
+            await bt_promt_track_name()
+        ],
     )
     return kb
+

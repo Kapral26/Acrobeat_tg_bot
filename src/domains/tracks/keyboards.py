@@ -4,6 +4,7 @@ from aiogram.types import (
 )
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+from src.domains.common.buttons import bt_return_main_page
 from src.domains.tracks.schemas import DownloadTrackParams, RepoTracks
 
 
@@ -15,9 +16,7 @@ def get_retry_search_button(text: str) -> InlineKeyboardBuilder:
 
 async def break_processing() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.row(
-        InlineKeyboardButton(text="🔁 Вернуться", callback_data="break_processing"),
-    )
+    builder.row(await bt_return_main_page())
     return builder.as_markup()
 
 
