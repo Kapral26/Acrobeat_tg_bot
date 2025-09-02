@@ -4,7 +4,7 @@ from aiogram.types import CallbackQuery
 from dishka import FromDishka
 from dishka.integrations.aiogram import inject
 
-from src.domains.common.message_pagination import msg_pagination
+from src.domains.common.message_pagination import show_msg_pagination
 from src.domains.tracks.track_request.keyboards import (
     kb_confirm_track_request,
     kb_no_track_request,
@@ -60,7 +60,7 @@ async def _handle_request_tracks(
 
     keyboard = kb_user_track_request
 
-    await msg_pagination(
+    await show_msg_pagination(
         callback=callback,
         page=page,
         keyboard=keyboard,

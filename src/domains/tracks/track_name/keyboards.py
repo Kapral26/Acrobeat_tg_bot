@@ -3,18 +3,19 @@ from collections.abc import Sequence
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+from src.domains.common.buttons import bt_set_track_name
+from src.domains.common.message_pagination import create_paginated_keyboard
 
-def back_track_name_button(callback_data: str = "go_back_track_name_item"):
+
+def kb_back_track_name_promt_item(callback_data: str = "go_back_track_name_item"):
     builder = InlineKeyboardBuilder()
-    builder.row(
-        InlineKeyboardButton(text="⬅️ Назад", callback_data=callback_data)
-    )
+    builder.row(InlineKeyboardButton(text="⬅️ Назад", callback_data=callback_data))
     return builder.as_markup()
 
 
-def edit_track_name_keyboard():
+async def kb_show_final_result():
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="✏️ Изменить", callback_data="set_track_name"))
+    builder.row(await bt_set_track_name("✏️ Изменить"))
     builder.row(
         InlineKeyboardButton(text="✅ Завершить", callback_data="confirm_input")
     )
@@ -48,47 +49,21 @@ def discipline_keyboard():
     return builder.as_markup()
 
 
-async def user_track_name_parts_keyboard(
+async def kb_track_name_pagination(
     user_track_parts: Sequence,
     page: int,
     total_pages: int,
 ) -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
 
-    for item in user_track_parts:
-        builder.row(
-            InlineKeyboardButton(
-                text=item.track_part, callback_data=f"t_p:{item.track_part}"
-            )
-        )
-
-    builder.adjust(2)
-
-    navigate_key = []
-    if page > 1:
-        navigate_key.append(
-            InlineKeyboardButton(
-                text="⬅️ Назад", callback_data=f"track_name_page:{page - 1}"
-            )
-        )
-    if page < total_pages:
-        navigate_key.append(
-            InlineKeyboardButton(
-                text="Вперед ➡️", callback_data=f"track_name_page:{page + 1}"
-            )
-        )
-
-    builder.row(*navigate_key)
-    if navigate_key:
-        builder.row(
-            InlineKeyboardButton(
-                text="️🔁 Вернуться в начало", callback_data="set_track_name"
-            ),
-        )
-
-    builder.row(
-        InlineKeyboardButton(
+    kb = await create_paginated_keyboard(
+        items=user_track_parts,
+        item_params=f"track_part",
+        page=page,
+        total_pages=total_pages,
+        bt_prefix="t_p",
+        bt_pagin_prefix="track_name_page",
+        bottom_buttons=[InlineKeyboardButton( # TODO вынести в модуль buttoms.py
             text="✏️ Добавить вручную", callback_data="hand_input_track_part"
-        ),
+        )],
     )
-    return builder.as_markup()
+    return kb

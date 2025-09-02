@@ -4,8 +4,10 @@ from aiogram.types import (
 )
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+from src.domains.common.buttons import bt_set_track_name
 
-async def get_start_inline_keyboard() -> InlineKeyboardMarkup:
+
+async def kb_start_msg() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(
@@ -14,9 +16,6 @@ async def get_start_inline_keyboard() -> InlineKeyboardMarkup:
         ),
     )
     builder.row(
-        InlineKeyboardButton(
-            text="🔎 Найти новый трек",
-            callback_data="set_track_name",
-        ),
+        await bt_set_track_name("🔎 Найти новый трек"),
     )
     return builder.as_markup()

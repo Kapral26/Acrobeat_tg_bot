@@ -1,12 +1,14 @@
 from collections.abc import Awaitable, Callable, Sequence
 
-from aiogram.types import CallbackQuery, InlineKeyboardMarkup
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from src.domains.tracks.track_name.message_cleanup import TrackNameMsgCleanerService
 
 ITEM_PER_PAGE = 4
 
-async def msg_pagination(
+
+async def show_msg_pagination(
     callback: CallbackQuery,
     message_text: str,
     data: Sequence,
@@ -28,3 +30,51 @@ async def msg_pagination(
             message_id=send_msg.message_id,
             user_id=callback.from_user.id,
         )
+
+
+async def create_paginated_keyboard(
+    items: Sequence,
+    item_params: str,
+    page: int,
+    total_pages: int,
+    bt_prefix: str,
+    bt_pagin_prefix: str,
+    bottom_buttons: Sequence[InlineKeyboardButton] | None = None,
+) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+
+    for item in items:
+        attr = getattr(item, item_params)
+        builder.row(
+            InlineKeyboardButton(
+                text=attr,
+                callback_data=f"{bt_prefix}:{attr}",
+            )
+        )
+
+    builder.adjust(2)
+
+    pagination_buttons = []
+    if page > 1:
+        pagination_buttons.append(
+            InlineKeyboardButton(
+                text="⬅️ Назад", callback_data=f"{bt_pagin_prefix}:{page - 1}"
+            )
+        )
+    if page < total_pages:
+        pagination_buttons.append(
+                InlineKeyboardButton(
+                    text="Вперед ➡️",
+                    callback_data=f"{bt_pagin_prefix}:{page + 1}",
+                ),
+        )
+
+    builder.row(*pagination_buttons)
+    builder.row(
+        InlineKeyboardButton(
+            text="️🔁 В начало списка", callback_data=f"{bt_pagin_prefix}:1"
+        ),
+    )
+    if bottom_buttons:
+        builder.row(*bottom_buttons)
+    return builder.as_markup()

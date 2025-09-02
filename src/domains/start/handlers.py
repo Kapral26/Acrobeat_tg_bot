@@ -6,7 +6,7 @@ from aiogram.types import CallbackQuery, Message
 from dishka import FromDishka
 from dishka.integrations.aiogram import inject
 
-from src.domains.start.keyboards import get_start_inline_keyboard
+from src.domains.start.keyboards import kb_start_msg
 from src.domains.users.services import UserService
 
 start_router = Router(name="start_router")
@@ -53,10 +53,10 @@ async def get_started_message(message: Message):
     try:
         await message.edit_text(
             start_msg,
-            reply_markup=await get_start_inline_keyboard(),
+            reply_markup=await kb_start_msg(),
         )
     except TelegramBadRequest:
         await message.answer(
             start_msg,
-            reply_markup=await get_start_inline_keyboard(),
+            reply_markup=await kb_start_msg(),
         )
