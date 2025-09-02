@@ -20,7 +20,7 @@ async def start_command(
 ):
     """Обработчик команды /start."""
     await get_started_message(message)
-    await user_service.register_user(message)
+    await user_service.register_user(message, )
 
 
 @start_router.callback_query(F.data == "break_processing")
