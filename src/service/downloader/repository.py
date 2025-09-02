@@ -1,17 +1,29 @@
+"""
+Модуль `repository.py` содержит реализацию репозиториев для поиска и загрузки музыкальных треков.
+
+Реализованы следующие репозитории:
+- `DownloaderRepoYT`: Поиск и загрузка с YouTube.
+- `DownloaderRepoPinkamuz`: Поиск и загрузка с сайта Pinkamuz.
+- `TelegramDownloaderRepo`: Загрузка файлов из Telegram.
+- `DownloaderRepoHitmo`: Поиск и загрузка с сайта Hitmotop.
+
+Каждый репозиторий реализует интерфейс `DownloaderAbstractRepo`, предоставляя методы `find_tracks_on_phrase` и `download_track`.
+"""
+
 import asyncio
 import logging
 from dataclasses import dataclass
-from functools import partial
 from pathlib import Path
 from urllib.parse import quote, urljoin
 
 import httpx
 from aiogram import Bot
 from bs4 import BeautifulSoup
-from yt_dlp import DownloadError, YoutubeDL
+from yt_dlp import YoutubeDL
+from yt_dlp.utils import DownloadError  # Исправленный импорт исключения
 
-from src.service.downloader.abstarction import DownloaderAbstractRepo
-from src.service.downloader.cach_repository import DownloaderCacheRepo
+from src.service.downloader.abstraction import DownloaderAbstractRepo
+from src.service.downloader.cache_repository import DownloaderCacheRepo
 from src.service.settings.config import Settings
 
 logger = logging.getLogger(__name__)
@@ -19,15 +31,29 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class DownloaderRepoYT(DownloaderAbstractRepo):
+    """
+    Репозиторий для поиска и загрузки музыки с YouTube.
+
+    Использует библиотеку `yt-dlp` для извлечения метаданных и загрузки аудио.
+    """
+
     settings: Settings
     cache_repository: DownloaderCacheRepo
     priority: int = 11
 
     @property
     def alias(self) -> str:
+        """Алиас репозитория."""
         return "yt"
 
-    def _download(self, url: str, output_path: Path):
+    def _download(self, url: str, output_path: Path) -> None:
+        """
+        Синхронная загрузка аудиофайла с YouTube.
+
+        :param url: URL видео на YouTube.
+        :param output_path: Путь к выходному файлу (без расширения).
+        :raises DownloadError: Если произошла ошибка загрузки.
+        """
         ydl_opts = {
             "format": "bestaudio/best",
             "outtmpl": output_path.with_suffix("").as_posix(),
@@ -50,24 +76,40 @@ class DownloaderRepoYT(DownloaderAbstractRepo):
         with YoutubeDL(ydl_opts) as ydl:
             try:
                 ydl.download([url])
-            except DownloadError:  # noqa: TRY203
+            except DownloadError:
+                logger.exception("YT Download failed")
                 raise
 
-    async def download_track(self, bot: Bot, url: str, output_path: Path):
+    async def download_track(self, bot: Bot, url: str, output_path: Path) -> None:
+        """
+        Асинхронная загрузка трека с YouTube.
+
+        :param bot: Экземпляр бота Aiogram.
+        :param url: URL трека.
+        :param output_path: Путь к выходному файлу.
+        :return: `None` при успешной загрузке, или `None` при ошибке.
+        """
         loop = asyncio.get_event_loop()
         try:
-            return await asyncio.wait_for(
+            await asyncio.wait_for(
                 loop.run_in_executor(None, self._download, url, output_path),
                 timeout=30,
             )
         except asyncio.TimeoutError:  # noqa: UP041
             logger.exception("⏱️ Превышено время ожидания")
-            return None
-        except DownloadError as e:
-            logger.exception(f"⚠️ Ошибка загрузки: {e}")
-            return None
+        except DownloadError:
+            logger.exception("⚠️ Ошибка загрузки")
 
-    def _search_track(self, query: str, max_results: int = 3):
+    def _search_track(
+        self, query: str, chat_id: int = 0, max_results: int = 3
+    ) -> list[dict]:
+        """
+        Поиск треков на YouTube по ключевой фразе.
+
+        :param query: Ключевая фраза для поиска.
+        :param max_results: Максимальное количество результатов.
+        :return: Список найденных треков в виде словарей.
+        """
         ydl_opts = {
             "quiet": True,
             "extract_flat": "in_playlist",  # не скачиваем, только метаданные
@@ -79,19 +121,28 @@ class DownloaderRepoYT(DownloaderAbstractRepo):
             info = ydl.extract_info(search_query, download=False)
             return info["entries"]
 
-    async def find_tracks_on_phrase(self, query: str, chat_id: int):
+    async def find_tracks_on_phrase(
+        self, query: str, chat_id: int
+    ) -> list[dict] | None:
+        """
+        Асинхронный поиск треков по ключевой фразе.
+
+        :param query: Ключевая фраза для поиска.
+        :param chat_id: ID чата для кэширования ссылки.
+        :return: Список найденных треков или `None` при ошибке.
+        """
         loop = asyncio.get_event_loop()
 
         try:
             results = await asyncio.wait_for(
-                loop.run_in_executor(None, partial(self._search_track, query)),
+                loop.run_in_executor(None, self._search_track, query, chat_id, 3),
                 timeout=30,
             )
-        except asyncio.TimeoutError:  # noqa: UP041
+        except TimeoutError:
             logger.exception("⏱️ Превышено время ожидания")
             return None
-        except DownloadError as e:
-            logger.exception(f"⚠️ Ошибка загрузки: {e}")
+        except DownloadError:
+            logger.exception("⚠️ Ошибка загрузки")
             return None
 
         if not results:
@@ -107,6 +158,12 @@ class DownloaderRepoYT(DownloaderAbstractRepo):
 
 @dataclass
 class DownloaderRepoPinkamuz(DownloaderAbstractRepo):
+    """
+    Репозиторий для поиска и загрузки музыки с сайта Pinkamuz.
+
+    Использует HTTP-запросы и парсинг HTML-страницы для получения информации о треках.
+    """
+
     settings: Settings
     cache_repository: DownloaderCacheRepo
     base_url: str = "https://pinkamuz.pro"
@@ -114,10 +171,12 @@ class DownloaderRepoPinkamuz(DownloaderAbstractRepo):
 
     @property
     def alias(self) -> str:
+        """Алиас репозитория."""
         return "pin"
 
     @property
-    def headers(self):
+    def headers(self) -> dict:
+        """HTTP-заголовки для запросов."""
         return {
             "User-Agent": "Mozilla/5.0",
             "Referer": self.base_url,
@@ -129,6 +188,14 @@ class DownloaderRepoPinkamuz(DownloaderAbstractRepo):
         chat_id: int,
         max_results: int = 3,
     ) -> list[dict]:
+        """
+        Поиск треков на сайте Pinkamuz по ключевой фразе.
+
+        :param query: Ключевая фраза для поиска.
+        :param chat_id: ID чата для кэширования ссылки.
+        :param max_results: Максимальное количество результатов.
+        :return: Список найденных треков в виде словарей.
+        """
         search_url = f"{self.base_url}/search/{quote(query)}"
 
         async with httpx.AsyncClient(follow_redirects=True, timeout=30) as client:
@@ -184,9 +251,22 @@ class DownloaderRepoPinkamuz(DownloaderAbstractRepo):
             return results
 
     async def find_tracks_on_phrase(self, query: str, chat_id: int) -> list[dict]:
+        """
+        Асинхронный поиск треков на сайте Pinkamuz.
+
+        :param query: Ключевая фраза для поиска.
+        :param chat_id: ID чата для кэширования ссылки.
+        :return: Список найденных треков.
+        """
         return await self._search_track(query=query, chat_id=chat_id)
 
     async def _download(self, url: str, output_path: Path) -> None:
+        """
+        Скачивание аудиофайла с сайта Pinkamuz.
+
+        :param url: URL файла для загрузки.
+        :param output_path: Путь к выходному файлу.
+        """
         async with httpx.AsyncClient(follow_redirects=True, timeout=60) as client:
             response = await client.get(url, headers=self.headers)
             response.raise_for_status()
@@ -195,27 +275,54 @@ class DownloaderRepoPinkamuz(DownloaderAbstractRepo):
                 f.write(response.content)
 
     async def download_track(self, bot: Bot, url: str, output_path: Path) -> None:
+        """
+        Асинхронная загрузка трека.
+
+        :param bot: Экземпляр бота Aiogram.
+        :param url: URL трека.
+        :param output_path: Путь к выходному файлу.
+        """
         await self._download(url, output_path)
 
 
 @dataclass
 class TelegramDownloaderRepo(DownloaderAbstractRepo):
+    """
+    Репозиторий для загрузки файлов из Telegram.
+
+    Поддерживает загрузку медиафайлов, отправленных пользователем.
+    """
+
     priority = -100
 
     @property
     def alias(self) -> str:
+        """Алиас репозитория."""
         return "telegram"
 
     def _download(self, url: str, output_path: Path) -> None:
+        """Заглушка — не используется."""
         pass
 
-    def _search_track(self, query: str, max_results: int = 3) -> list[None]:
+    def _search_track(
+        self, query: str, chat_id: int = 0, max_results: int = 3
+    ) -> list[None]:
+        """Заглушка — не используется."""
         return []
 
     async def find_tracks_on_phrase(self, query: str, chat_id: int) -> list[None]:
+        """Заглушка — не используется."""
         return []
 
     async def download_track(self, bot: Bot, file_id: str, output_path: Path) -> None:
+        """
+        Загрузка файла из Telegram.
+
+        :param bot: Экземпляр бота Aiogram.
+        :param file_id: ID файла.
+        :param output_path: Путь к выходному файлу.
+        :raises RuntimeError: При ошибке загрузки.
+        """
         try:
             file = await bot.get_file(file_id)
             await bot.download_file(file.file_path, destination=output_path)
@@ -225,6 +332,12 @@ class TelegramDownloaderRepo(DownloaderAbstractRepo):
 
 @dataclass
 class DownloaderRepoHitmo(DownloaderAbstractRepo):
+    """
+    Репозиторий для поиска и загрузки музыки с сайта Hitmotop.
+
+    Использует HTTP-запросы и парсинг HTML-страницы для получения информации о треках.
+    """
+
     settings: Settings
     cache_repository: DownloaderCacheRepo
     base_url: str = "https://rus.hitmotop.com"
@@ -232,10 +345,12 @@ class DownloaderRepoHitmo(DownloaderAbstractRepo):
 
     @property
     def alias(self) -> str:
+        """Алиас репозитория."""
         return "hitmo"
 
     @property
-    def headers(self):
+    def headers(self) -> dict:
+        """HTTP-заголовки для запросов."""
         return {
             "User-Agent": (
                 "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -255,6 +370,14 @@ class DownloaderRepoHitmo(DownloaderAbstractRepo):
         chat_id: int,
         max_results: int = 3,
     ) -> list[dict]:
+        """
+        Поиск треков на сайте Hitmotop по ключевой фразе.
+
+        :param query: Ключевая фраза для поиска.
+        :param chat_id: ID чата для кэширования ссылки.
+        :param max_results: Максимальное количество результатов.
+        :return: Список найденных треков в виде словарей.
+        """
         search_url = f"{self.base_url}/search?q={quote(query)}"
 
         async with httpx.AsyncClient(follow_redirects=True, timeout=30) as client:
@@ -301,9 +424,22 @@ class DownloaderRepoHitmo(DownloaderAbstractRepo):
             return results
 
     async def find_tracks_on_phrase(self, query: str, chat_id: int) -> list[dict]:
+        """
+        Асинхронный поиск треков на сайте Hitmotop.
+
+        :param query: Ключевая фраза для поиска.
+        :param chat_id: ID чата для кэширования ссылки.
+        :return: Список найденных треков.
+        """
         return await self._search_track(query=query, chat_id=chat_id)
 
     async def _download(self, url: str, output_path: Path) -> None:
+        """
+        Скачивание аудиофайла с сайта Hitmotop.
+
+        :param url: URL файла для загрузки.
+        :param output_path: Путь к выходному файлу.
+        """
         async with httpx.AsyncClient(follow_redirects=True, timeout=60) as client:
             response = await client.get(url, headers=self.headers)
             response.raise_for_status()
@@ -312,4 +448,11 @@ class DownloaderRepoHitmo(DownloaderAbstractRepo):
                 f.write(response.content)
 
     async def download_track(self, bot: Bot, url: str, output_path: Path) -> None:
+        """
+        Асинхронная загрузка трека.
+
+        :param bot: Экземпляр бота Aiogram.
+        :param url: URL трека.
+        :param output_path: Путь к выходному файлу.
+        """
         await self._download(url, output_path)

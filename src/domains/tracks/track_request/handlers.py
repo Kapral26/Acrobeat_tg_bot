@@ -1,3 +1,12 @@
+"""
+Модуль `handlers.py` содержит обработчики событий для взаимодействия с историей поисковых запросов пользователей.
+
+Обрабатывает:
+- открытие истории запросов;
+- пагинацию списка запросов;
+- выбор конкретного запроса из истории.
+"""
+
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
@@ -21,7 +30,15 @@ track_request_router = Router(name="track_request_router")
 async def try_choose_track_name(
     callback: CallbackQuery,
     track_request_service: FromDishka[TrackRequestService],
-):
+) -> None:
+    """
+    Обработчик для открытия истории поисковых запросов пользователя.
+
+    Запускает отображение первой страницы истории запросов.
+
+    :param callback: CallbackQuery от нажатия кнопки "Моя история".
+    :param track_request_service: Сервис для работы с запросами на поиск треков.
+    """
     await callback.answer()
     await _handle_request_tracks(callback, track_request_service, page=1)
 
@@ -32,7 +49,16 @@ async def handle_request_tracks(
     callback: CallbackQuery,
     track_request_service: FromDishka[TrackRequestService],
     page: int | None = None,
-):
+) -> None:
+    """
+    Обработчик для навигации по страницам истории запросов.
+
+    Извлекает данные о запросах пользователя и отображает их с пагинацией.
+
+    :param callback: CallbackQuery с данными о номере страницы.
+    :param track_request_service: Сервис для работы с запросами на поиск треков.
+    :param page: Номер текущей страницы (определяется из callback.data).
+    """
     if page is None:
         page = int(callback.data.split(":")[-1])
     await _handle_request_tracks(callback, track_request_service, page)
@@ -42,7 +68,16 @@ async def _handle_request_tracks(
     callback: CallbackQuery,
     track_request_service: TrackRequestService,
     page: int | None = None,
-):
+) -> None:
+    """
+    Вспомогательная функция для отображения истории запросов пользователя.
+
+    Получает список запросов, формирует клавиатуру с пагинацией и отправляет сообщение с результатами.
+
+    :param callback: CallbackQuery от пользователя.
+    :param track_request_service: Сервис для работы с запросами на поиск треков.
+    :param page: Номер страницы для отображения.
+    """
     await callback.answer("Сейчас посмотрим, что вы искали ранее...")
 
     user_track_requests = await track_request_service.get_track_user_request(
@@ -75,7 +110,16 @@ async def callback_query(
     callback: CallbackQuery,
     state: FSMContext,
     user_service: FromDishka[UserService],
-):
+) -> None:
+    """
+    Обработчик для выбора конкретного запроса из истории.
+
+    Сохраняет выбранный текст запроса в сессию пользователя и запрашивает подтверждение.
+
+    :param callback: CallbackQuery с данными о выбранном запросе.
+    :param state: Состояние FSM для управления диалогом.
+    :param user_service: Сервис для работы с пользователями.
+    """
     await callback.answer()
     query_text = callback.data.split(":")[-1]
     await user_service.set_session_query_text(callback.from_user.id, query_text)

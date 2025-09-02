@@ -1,3 +1,9 @@
+"""
+Модуль `keyboards.py` содержит функции для создания клавиатур, используемых в начальном сообщении бота.
+
+Обеспечивает создание интерактивной inline-клавиатуры с кнопками для взаимодействия пользователя.
+"""
+
 from aiogram.types import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -8,6 +14,11 @@ from src.domains.common.buttons import bt_set_track_name
 
 
 async def kb_start_msg() -> InlineKeyboardMarkup:
+    """
+    Создаёт inline-клавиатуру для начального сообщения бота.
+
+    :return: Объект `InlineKeyboardMarkup`.
+    """
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(
