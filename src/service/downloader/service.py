@@ -27,13 +27,23 @@ class DownloaderService:
         return repo
 
     async def find_tracks_on_phrase(
-        self, phrase: str, bot: Bot, chat_id: int, user_id: int
+        self,
+        phrase: str,
+        bot: Bot,
+        chat_id: int,
+        skip_repo_alias: str | None = None,
     ) -> RepoTracks | None:
         logger.debug(f"Searching for tracks on phrase '{phrase}'")
 
         self.external_repository.sort(key=lambda x: x.priority)
+
+        if skip_repo_alias:
+            skip_repo = self._get_repo(skip_repo_alias)
+            skip_index_repo = self.external_repository.index(skip_repo) + 1
+            self.external_repository = self.external_repository[skip_index_repo:]
+
         for _idx, repo in enumerate(self.external_repository):
-            logger.debug(f"Поиск в источнике {repo.alias}")
+            logger.debug(f"Поиск в источнике {repo.alias}, {phrase=}")
             try:
                 founded_tracks = await processing_msg(
                     repo.find_tracks_on_phrase,
@@ -53,7 +63,10 @@ class DownloaderService:
         return None
 
     async def download_track(
-        self, download_params: DownloadTrackParams, bot: Bot, chat_id: int
+        self,
+        download_params: DownloadTrackParams,
+        bot: Bot,
+        chat_id: int,
     ):
         logger.debug(
             f"Downloading track '{download_params.url}', repo: '{download_params.repo_alias}'"
@@ -82,5 +95,3 @@ class DownloaderService:
             raise
         else:
             return track_path
-
-

@@ -9,6 +9,7 @@ from aiogram.types import CallbackQuery, Message
 from dishka import FromDishka
 from dishka.integrations.aiogram import inject
 
+from src.domains.common.message_pagination import msg_pagination
 from src.domains.tracks.schemas import DownloadTrackParams
 from src.domains.tracks.service import (
     TrackService,
@@ -29,15 +30,6 @@ track_name_router = Router(name="track_name_router")
 
 
 class TrackNameStates(StatesGroup):
-    """
-    Класс состояний для FSM-машинки, связанной с вводом данных трека.
-
-    Атрибуты:
-        SECOND_NAME: Состояние для ввода фамилии.
-        FIRST_NAME: Состояние для ввода инициалов.
-        YEAR_OF_BIRTH: Состояние для ввода года рождения.
-    """
-
     SECOND_NAME = State()
     FIRST_NAME = State()
     YEAR_OF_BIRTH = State()
@@ -59,9 +51,6 @@ async def try_choose_track_name(
         cleaner_service=cleaner_service,
         page=1,
     )
-
-
-ITEM_PER_PAGE = 4
 
 
 @track_name_router.callback_query(F.data.startswith("track_name_page:"))
@@ -91,23 +80,15 @@ async def _handle_search_tracks(
     await callback.answer("Сейчас посмотрим, что вы вводили ранее...")
 
     user_track_parts = await user_service.get_user_track_names(callback.from_user.id)
+    keyboard = user_track_name_parts_keyboard
 
-    total_pages = (len(user_track_parts) + ITEM_PER_PAGE - 1) // ITEM_PER_PAGE
-    start_idx = (page - 1) * ITEM_PER_PAGE
-    end_idx = start_idx + ITEM_PER_PAGE
-
-    current_page = user_track_parts[start_idx:end_idx]
-    message_text = "<b>Ранее введенные данные:</b>\n\n"
-    send_msg = await callback.message.edit_text(
-        message_text,
-        parse_mode="html",
-        reply_markup=await user_track_name_parts_keyboard(
-            current_page, page, total_pages
-        ),
-    )
-    await cleaner_service.collect_cliper_messages_to_delete(
-        message_id=send_msg.message_id,
-        user_id=callback.from_user.id,
+    await msg_pagination(
+        callback=callback,
+        cleaner_service=cleaner_service,
+        page=page,
+        keyboard=keyboard,
+        message_text="<b>Ранее вы вводили имена:</b>\n\n",
+        data=user_track_parts,
     )
 
 
@@ -139,31 +120,16 @@ async def set_track_part(
 
 @track_name_router.callback_query(F.data == "hand_input_track_part")
 async def set_second_name(callback: CallbackQuery, state: FSMContext) -> None:
-    """
-    Обработчик нажатия кнопки "Установить имя трека".
-    Устанавливает состояние ввода фамилии и запрашивает у пользователя ввод.
-
-    Аргументы:
-        callback (CallbackQuery): Объект callback-запроса от пользователя.
-        state (FSMContext): Контекст машины состояний.
-    """
     await state.set_state(TrackNameStates.SECOND_NAME)
     await callback.message.edit_text(
-        "Введите фамилию", reply_markup=back_track_name_button()
+        "Введите фамилию",
+        reply_markup=back_track_name_button(callback_data="set_track_name"),
     )
     await callback.answer()
 
 
 @track_name_router.message(TrackNameStates.SECOND_NAME)
 async def set_first_name(message: Message, state: FSMContext) -> None:
-    """
-    Обработчик ввода фамилии.
-    Сохраняет фамилию и переходит к следующему шагу — вводу инициалов.
-
-    Аргументы:
-        message (Message): Сообщение от пользователя.
-        state (FSMContext): Контекст машины состояний.
-    """
     second_name = message.text.strip()
     if not second_name or not second_name.isalpha():
         await message.answer("Пожалуйста, введите фамилию только из букв.")
@@ -265,10 +231,7 @@ async def process_discipline(
         await callback.answer()
 
 
-@track_name_router.message(
-    TrackNameStates.CUSTOM_DISCIPLINE,
-    lambda message: message.text and message.text.isalpha(),
-)
+@track_name_router.message(TrackNameStates.CUSTOM_DISCIPLINE)
 @inject
 async def set_custom_discipline(
     message: Message,
@@ -276,16 +239,6 @@ async def set_custom_discipline(
     user_service: FromDishka[UserService],
     cleaner_service: FromDishka[TrackNameMsgCleanerService],
 ) -> None:
-    custom_discipline = message.text.strip()
-    if not custom_discipline or not custom_discipline.isalpha():
-        send_msg = await message.answer(
-            "Пожалуйста, введите дисциплину только из букв."
-        )
-        await cleaner_service.collect_cliper_messages_to_delete(
-            message_id=send_msg.message_id,
-            user_id=message.from_user.id,
-        )
-        return
     await state.update_data(discipline=message.text)
     send_msg = await show_final_result(
         message=message,
@@ -307,9 +260,8 @@ async def go_back(callback: CallbackQuery, state: FSMContext):
     if current_state == TrackNameStates.FIRST_NAME.state:
         await state.set_state(TrackNameStates.SECOND_NAME)
         await callback.message.edit_text(
-            "Введите фамилию", reply_markup=back_track_name_button()
+            "Введите фамилию", reply_markup=back_track_name_button("set_track_name")
         )
-
     elif current_state == TrackNameStates.YEAR_OF_BIRTH.state:
         await state.set_state(TrackNameStates.FIRST_NAME)
         await callback.message.edit_text(
@@ -360,17 +312,19 @@ async def confirm_input(
     await cleaner_service.drop_clip_params_message(
         bot=bot, user_id=callback.from_user.id, chat_id=callback.from_user.id
     )
-    
+
     state_data = await state.get_data()
     download_params = state_data.get("download_params")
-    query_text = await user_service.get_session_query_text(callback.from_user.id)
+    query_text = await user_service.get_session_query_text(
+        callback.from_user.id
+    )
 
     if not download_params:
         await track_search_service.search_tracks(
             callback=callback,
             bot=bot,
             state=state,
-            downloader=downloader_service,
+            downloader_service=downloader_service,
             track_request_service=track_request_service,
             query_text=query_text,
         )
