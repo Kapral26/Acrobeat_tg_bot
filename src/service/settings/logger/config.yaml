@@ -11,6 +11,7 @@ logging:
       class: logging.FileHandler
       filename: logs/backend.log
       level: DEBUG #INFO
+      filters: [ own_logger_filter ]
 
     file_sqlalchemy:
       class: logging.FileHandler
@@ -21,6 +22,13 @@ logging:
       class: logging.FileHandler
       filename: logs/redis.log
       level: DEBUG #INFO
+
+  filters:
+    own_logger_filter:
+      (): src.service.settings.logger.filters.OwnLoggerFilter
+      allowed_loggers_prefixes:
+        - "src."       # если используешь структуру проекта с src/
+        - "__main__"   # если запускаешь как скрипт
 
   loggers:
     root:
@@ -34,7 +42,7 @@ logging:
       propagate: false
 
     sqlalchemy:
-      handlers: [file_sqlalchemy ]
+      handlers: [ file_sqlalchemy ]
       level: DEBUG #INFO
       propagate: false
 

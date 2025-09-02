@@ -30,7 +30,7 @@ class UserCacheRepository(RedisClientWrapper):
         self, user_id: int
     ) -> list[TrackNamePartSchema] | None:
         key = self.user_track_names_key.format(user_id=user_id)
-        if not self.redis_client.exists(key):
+        if not await self.redis_client.exists(key):
             return None
 
         async with self.redis_client.pipeline() as pipe:

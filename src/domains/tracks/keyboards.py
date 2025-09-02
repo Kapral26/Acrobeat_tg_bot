@@ -9,7 +9,7 @@ from src.domains.tracks.schemas import DownloadTrackParams, RepoTracks
 
 def get_retry_search_button(text: str) -> InlineKeyboardBuilder:
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text=text, callback_data="find_track"))
+    builder.row(InlineKeyboardButton(text=text, callback_data="find_new_track"))
     return builder
 
 
@@ -35,11 +35,21 @@ async def track_list_kb(repo_result: RepoTracks) -> InlineKeyboardMarkup:
             )
         )
     builder.attach(get_retry_search_button("🔁 Попробовать новый поиск"))
+    builder.row(
+        InlineKeyboardButton(
+            text=f"⏭️ Искать в след. репозитории",
+            callback_data=f"skip_repo:{repo_result.repo_alias}",
+        )
+    )
     return builder.as_markup()
 
 
 async def get_search_kb() -> InlineKeyboardMarkup:
     builder = get_retry_search_button("🔁 Найти еще один трек")
+    return builder.as_markup()
+
+async def get_retry_search_kb() -> InlineKeyboardMarkup:
+    builder = get_retry_search_button("🔁 Найти другой трек")
     return builder.as_markup()
 
 async def get_search_after_error_kb() -> InlineKeyboardMarkup:

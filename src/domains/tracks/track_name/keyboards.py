@@ -1,22 +1,20 @@
-from aiogram.types import InlineKeyboardButton
+from collections.abc import Sequence
+
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from src.domains.tracks.track_name.schemas import TrackNamePartSchema
 
-
-def back_track_name_button():
+def back_track_name_button(callback_data: str = "go_back_track_name_item"):
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text="⬅️ Назад", callback_data="go_back_track_name_item")
+        InlineKeyboardButton(text="⬅️ Назад", callback_data=callback_data)
     )
     return builder.as_markup()
 
 
 def edit_track_name_keyboard():
     builder = InlineKeyboardBuilder()
-    builder.row(
-        InlineKeyboardButton(text="✏️ Изменить", callback_data="set_track_name")
-    )
+    builder.row(InlineKeyboardButton(text="✏️ Изменить", callback_data="set_track_name"))
     builder.row(
         InlineKeyboardButton(text="✅ Завершить", callback_data="confirm_input")
     )
@@ -51,10 +49,10 @@ def discipline_keyboard():
 
 
 async def user_track_name_parts_keyboard(
-    user_track_parts: list[TrackNamePartSchema],
+    user_track_parts: Sequence,
     page: int,
     total_pages: int,
-):
+) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 
     for item in user_track_parts:
@@ -81,11 +79,12 @@ async def user_track_name_parts_keyboard(
         )
 
     builder.row(*navigate_key)
-    builder.row(
-        InlineKeyboardButton(
-            text="️🔁 Вернуться в начало", callback_data="set_track_name"
-        ),
-    )
+    if navigate_key:
+        builder.row(
+            InlineKeyboardButton(
+                text="️🔁 Вернуться в начало", callback_data="set_track_name"
+            ),
+        )
 
     builder.row(
         InlineKeyboardButton(

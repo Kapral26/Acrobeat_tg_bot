@@ -101,7 +101,7 @@ class UserService:
         if not session_track_name:
             logger.warning("Session track does not exist")
 
-    async def set_user_query_text(self, user_id: int, query_text: str):
+    async def set_session_query_text(self, user_id: int, query_text: str):
         key = self.user_session_query_text.format(user_id=user_id)
         await self.user_cache_repository.set(key, query_text, ttl=180)
 
@@ -120,3 +120,8 @@ class UserService:
 
         if not session_user_query:
             logger.warning("Session query text does not exist")
+
+    async def get_and_del_session_query_text(self, user_id: int) -> str:
+        session_query_text = await self.get_session_query_text(user_id)
+        await self.del_session_query_text(user_id)
+        return session_query_text
