@@ -1,7 +1,7 @@
 [project]
 name = "acrobeat-tg-bot"
 version = "0.1.0"
-description = "Add your description here"
+description = "Асинхронный Telegram-бот для работы с музыкой, пользователями и треками. Использует PostgreSQL, Redis, Alembic, DI (dishka), uv и Docker."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -48,8 +48,8 @@ lint.select = [
     "ANN", # Type annotations
 ]
 
-# Игнорируемые правила
-lint.ignore = [
+extend-select = ["ALL"]
+extend-ignore = [
     # Документирование и форматирование docstring
     "D107", # Missing docstring in public module
     "D203", # One blank line required before class docstring
@@ -83,35 +83,27 @@ lint.ignore = [
     "TCH003", # Incorrect typing import
 ]
 
-# Правила, которые можно автоматически исправлять
-fixable = ["ALL"]
-
 # Исключить директории из проверки
 exclude = [
-    ".bzr",
-    ".direnv",
-    ".eggs",
-    ".git",
-    ".git-rewrite",
-    ".hg",
-    ".mypy_cache",
-    ".nox",
-    ".pants.d",
-    ".pytype",
-    ".ruff_cache",
-    ".svn",
-    ".tox",
     ".venv",
-    "__pypackages__",
-    "_build",
-    "buck-out",
+    "__pycache__",
     "build",
     "dist",
     "node_modules",
-    "venv",
+    ".git",
     ".idea",
-    "migrations/versions"
+    "pgdata",
+    "logs",
 ]
+
+# Правила, которые можно автоматически исправлять
+autofix = true
+
+# Максимальная длина строки
+line-length = 120
+
+# Целевая версия Python
+target-version = "py312"
 
 # Правила, которые не подлежат автоматической фиксации
 unfixable = []
@@ -122,5 +114,3 @@ unfixable = []
 docstring-code-format = true
 # Стиль кавычек
 quote-style = "double"
-# Разрешить неиспользуемые переменные с префиксом "_"
-#dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
