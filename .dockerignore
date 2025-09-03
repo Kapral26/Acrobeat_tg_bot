@@ -1,0 +1,26 @@
+# Исключаем временные, кэшированные и лишние файлы/папки
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.log
+*.env
+.env.*
+*.egg-info/
+.eggs/
+*.bak
+*.swp
+.DS_Store
+.vscode/
+.idea/
+.git/
+.gitignore
+migrations/__pycache__/
+logs/
+pgdata/
+
+# Исключаем тесты, если есть
+tests/
+

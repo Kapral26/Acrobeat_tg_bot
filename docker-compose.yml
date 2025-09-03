@@ -21,20 +21,6 @@ services:
     tty: true
     stdin_open: true
 
-  minio:
-    image: minio/minio
-    container_name: minio
-    env_file:
-      - .env
-    networks:
-      - my_app_network
-    ports:
-      - "9000:9000"  # S3 API
-      - "9001:9001"  # Web UI
-    command: server /data --console-address ":9001"
-    volumes:
-      - ./minio_data:/data
-
   cache:
     image: redis:7.2.4-alpine
     container_name: redis
@@ -53,6 +39,24 @@ services:
         reservations:
           cpus: '0.25'
           memory: 256M
+
+  bot:
+    build: .
+    container_name: acrobeat_bot
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_HOST=database
+      - REDIS_HOST=cache
+    depends_on:
+      - database
+      - cache
+    networks:
+      - my_app_network
+    restart: unless-stopped
+    command: uv run python main.py
+    tty: true
+    stdin_open: true
 
 networks:
   my_app_network:
