@@ -20,6 +20,7 @@ dependencies = [
     "pydantic>=2.11.7",
     "pydantic-settings>=2.10.1",
     "pydub>=0.25.1",
+    "pytest>=8.4.1",
     "pyyml>=0.0.2",
     "redis>=6.4.0",
     "ruff==0.12.11",
@@ -83,6 +84,9 @@ extend-ignore = [
     "TCH003", # Incorrect typing import
 ]
 
+# Правила, которые можно автоматически исправлять
+fixable = ["ALL"]
+
 # Исключить директории из проверки
 exclude = [
     ".venv",
@@ -95,9 +99,6 @@ exclude = [
     "pgdata",
     "logs",
 ]
-
-# Правила, которые можно автоматически исправлять
-autofix = true
 
 # Максимальная длина строки
 line-length = 120
@@ -114,3 +115,18 @@ unfixable = []
 docstring-code-format = true
 # Стиль кавычек
 quote-style = "double"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra --tb=short --strict-markers"
+testpaths = [
+    "tests",
+]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "slow: пометка для медленных тестов",
+    "integration: интеграционные тесты",
+    "asyncio: асинхронные тесты",
+]
