@@ -20,11 +20,11 @@ jobs:
         run: |
           rsync -avz --delete \
             -e "ssh -o StrictHostKeyChecking=no" \
-            ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.DEPLOY_DIR }}
+            ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}
       - name: 📝 Generate .env file on server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-          cat <<EOT > ${{ secrets.DEPLOY_DIR }}/.env
+          cat <<EOT > ${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}/.env
           POSTGRES_USER=${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB=${{ secrets.POSTGRES_DB }}
@@ -49,13 +49,13 @@ jobs:
       - name: 🧪 Run tests on VPS
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-          cd ${{ secrets.DEPLOY_DIR }}
+          cd ${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}
           docker compose exec bot pytest || docker-compose exec bot pytest
           EOF
       - name: 🧹 Run Ruff linter on VPS
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-          cd ${{ secrets.DEPLOY_DIR }}
+          cd ${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}
           docker compose exec bot ruff check . || docker-compose exec bot ruff check .
           EOF
 
@@ -70,7 +70,7 @@ jobs:
       - name: 🚀 Deploy with Docker Compose
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-          cd ${{ secrets.DEPLOY_DIR }}
+          cd ${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}
           docker compose pull || docker-compose pull
           docker compose down || docker-compose down
           docker compose up -d --build || docker-compose up -d --build
