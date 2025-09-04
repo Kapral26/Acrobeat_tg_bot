@@ -47,13 +47,7 @@ jobs:
           docker compose up -d --build
           EOF
 
-      - name: 🔍 Check bot container status
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "docker compose ps bot"
 
-      - name: 📋 Show bot logs if not running
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "docker compose logs bot"
 
   test_and_lint:
     runs-on: ubuntu-latest
