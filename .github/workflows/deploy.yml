@@ -5,24 +5,42 @@ on:
     branches: [ main ]
 
 jobs:
-  deploy:
+  lint:
     runs-on: ubuntu-latest
     steps:
-      - name: 🧾 Checkout code
+      - uses: actions/checkout@v4
+      - name: "🐍 Install Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: "📦 Install dependencies"
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff
+      - name: "🧹Run Ruff"
+        run: ruff check --output-format=github --config ./pyproject.toml .
+
+  # Задача деплоя теперь зависит от успешного выполнения линтера
+  deploy:
+    name: "🚀 Deploy to Server"
+    runs-on: ubuntu-latest
+    needs: lint # Деплой начнется ТОЛЬКО если линтер прошёл успешно
+    steps:
+      - name: "🧾 Checkout code"
         uses: actions/checkout@v4
 
-      - name: 🔐 Set up SSH
+      - name: "🔐 Set up SSH"
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: 📦 Copy files to VPS
+      - name: "📦 Copy files to VPS"
         run: |
           rsync -avz --delete \
             -e "ssh -o StrictHostKeyChecking=no" \
             ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}
 
-      - name: 📝 Generate .env file on server
+      - name: "📝 Generate .env file on server"
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
           cat <<EOT > ${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}/.env
@@ -39,44 +57,10 @@ jobs:
           EOT
           EOF
 
-      - name: 🚀 Start containers
+      - name: "🚀 Start containers"
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
           cd ${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}
-          docker compose down
-          docker compose up -d --build
-          EOF
-
-
-
-  lint:
-    runs-on: ubuntu-latest
-    needs: deploy
-    steps:
-      - name: 🔐 Set up SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-      - name: 🧹 Run Ruff linter on VPS
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-          cd ${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}
-          docker compose exec bot uv run ruff check --config ./pyproject.toml --fix
-          EOF
-
-  run:
-    runs-on: ubuntu-latest
-    needs: lint
-    steps:
-      - name: 🔐 Set up SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-      - name: 🚀 Deploy with Docker Compose
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-          cd ${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}
-          docker compose pull
           docker compose down
           docker compose up -d --build
           EOF
