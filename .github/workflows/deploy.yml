@@ -46,17 +46,29 @@ jobs:
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: 🚀 Start containers
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+          cd ${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}
+          docker compose up -d --build
+          EOF
+      - name: 🔍 Check bot container status
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "docker compose ps bot"
+      - name: 📋 Show bot logs if not running
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "docker compose logs bot"
       - name: 🧪 Run tests on VPS
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
           cd ${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}
-          docker compose exec bot pytest || docker-compose exec bot pytest
+          docker compose exec bot pytest
           EOF
       - name: 🧹 Run Ruff linter on VPS
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
           cd ${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}
-          docker compose exec bot ruff check . || docker-compose exec bot ruff check .
+          docker compose exec bot ruff check .
           EOF
 
   run:
