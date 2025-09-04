@@ -47,17 +47,14 @@ class UserRepository:
                     first_name=user_data.first_name,
                     last_name=user_data.last_name,
                 )
-                .returning(User.id)
             )
             try:
-                query_result = await session.execute(stmt)
+                await session.execute(stmt)
             except Exception:
                 await session.rollback()
                 raise
             else:
                 await session.commit()
-
-        query_result.scalars().first()
 
     async def get_users(self) -> Sequence[User]:
         """
@@ -96,7 +93,8 @@ class UserRepository:
             return result.scalars().first()
 
     async def get_user_track_names(
-        self, user_id: int
+        self,
+        user_id: int,
     ) -> Sequence[TrackNameRegistry] | list[Any]:
         """
         Получает список частей названий треков, связанных с пользователем.
