@@ -64,7 +64,9 @@ async def callback_query(
 
     await user_service.del_session_query_text(callback.from_user.id)
     track_path = await track_service.download_full_track(
-        message=callback.message, download_params=download_params, bot=bot
+        message=callback.message,
+        download_params=download_params,
+        bot=bot,
     )
     await state.set_data({"track_path": track_path})
 
@@ -72,7 +74,7 @@ async def callback_query(
 @track_router.message(YouTubeLinkFilter())
 async def handle_youtube_link(
     message: Message,
-    bot: Bot,
+    bot: Bot,  # noqa: ARG001
     state: FSMContext,
 ) -> None:
     """
@@ -90,7 +92,7 @@ async def handle_youtube_link(
     )
 
     await state.set_data(
-        {"download_params": DownloadYTParams(url=message.text).model_dump()}
+        {"download_params": DownloadYTParams(url=message.text).model_dump()},
     )
 
 
@@ -98,7 +100,7 @@ async def handle_youtube_link(
 @inject
 async def handle_audio_message(
     message: Message,
-    bot: Bot,
+    bot: Bot,  # noqa: ARG001
     state: FSMContext,
 ) -> None:
     """
@@ -116,7 +118,7 @@ async def handle_audio_message(
         file_id = audio.file_id
 
         await state.set_data(
-            {"download_params": DownloadTelegramParams(url=file_id).model_dump()}
+            {"download_params": DownloadTelegramParams(url=file_id).model_dump()},
         )
 
         await message.answer(

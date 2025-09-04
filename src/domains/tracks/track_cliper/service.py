@@ -97,5 +97,4 @@ class TrackCliperService:
             start_sec=clip_period.start_sec,
             duration_sec=clip_period.duration_sec,
         )
-        track_with_beep = await self.cliper_repo.concat_mp3(cut_track)
-        return track_with_beep
+        return await self.cliper_repo.concat_mp3(cut_track)

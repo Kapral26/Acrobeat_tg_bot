@@ -45,7 +45,7 @@ class SetClipPeriodStates(StatesGroup):
 @inject
 async def handler_set_clip_period(
     callback: CallbackQuery,
-    bot: Bot,
+    bot: Bot,  # noqa: ARG001
     state: FSMContext,
     cleaner_service: FromDishka[TrackClipMsgCleanerService],
 ) -> None:
@@ -66,7 +66,8 @@ async def handler_set_clip_period(
 
 
 async def _period_start_message(
-    callback: CallbackQuery, cleaner_service: TrackClipMsgCleanerService
+    callback: CallbackQuery,
+    cleaner_service: TrackClipMsgCleanerService,
 ) -> None:
     """
     Вспомогательная функция для отправки запроса на ввод времени начала обрезки.
@@ -85,7 +86,8 @@ async def _period_start_message(
     )
     logger.debug(f"Collect mgs_id: {send_msg.message_id} _period_start_message")
     await cleaner_service.collect_cliper_messages_to_delete(
-        message_id=send_msg.message_id, user_id=callback.from_user.id
+        message_id=send_msg.message_id,
+        user_id=callback.from_user.id,
     )
 
 
@@ -109,7 +111,8 @@ async def set_period_start(
     periodic_start = message.text.strip()
     logger.debug(f"Collect mgs_id: {message.message_id} set_period_start")
     await cleaner_service.collect_cliper_messages_to_delete(
-        message_id=message.message_id, user_id=message.from_user.id
+        message_id=message.message_id,
+        user_id=message.from_user.id,
     )
     if not is_valid_time_format(periodic_start):
         await show_invalid_time_format_msg(cleaner_service, message)
@@ -126,13 +129,14 @@ async def set_period_start(
     )
     logger.debug(f"Collect mgs_id: {send_msg.message_id} msg_end_period")
     await cleaner_service.collect_cliper_messages_to_delete(
-        message_id=send_msg.message_id, user_id=message.from_user.id
+        message_id=send_msg.message_id,
+        user_id=message.from_user.id,
     )
 
 
 @track_cliper_router.message(SetClipPeriodStates.PERIOD_END)
 @inject
-async def set_period_end(
+async def set_period_end(  # noqa: PLR0913
     message: Message,
     bot: Bot,
     state: FSMContext,
@@ -156,7 +160,8 @@ async def set_period_end(
     time_str = message.text.strip()
     logger.debug(f"Collect mgs_id: {message.message_id} set_period_end")
     await cleaner_service.collect_cliper_messages_to_delete(
-        message_id=message.message_id, user_id=message.from_user.id
+        message_id=message.message_id,
+        user_id=message.from_user.id,
     )
     if not is_valid_time_format(time_str):
         await show_invalid_time_format_msg(cleaner_service, message)
@@ -194,7 +199,8 @@ async def show_invalid_time_format_msg(
         parse_mode=ParseMode.MARKDOWN_V2,
     )
     await cleaner_service.collect_cliper_messages_to_delete(
-        message_id=send_msg.message_id, user_id=send_msg.from_user.id
+        message_id=send_msg.message_id,
+        user_id=send_msg.from_user.id,
     )
 
 
@@ -244,7 +250,9 @@ async def clip_track_again(
     :param cleaner_service: Сервис для управления временными сообщениями.
     """
     await cleaner_service.drop_clip_params_message(
-        bot=bot, chat_id=callback.message.chat.id, user_id=callback.from_user.id
+        bot=bot,
+        chat_id=callback.message.chat.id,
+        user_id=callback.from_user.id,
     )
 
     await callback.answer()

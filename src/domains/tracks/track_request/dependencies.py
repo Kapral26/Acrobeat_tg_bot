@@ -41,7 +41,8 @@ class TrackRequestProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     async def get_service(
-        self, repo: FromDishka[TrackRequestRepository]
+        self,
+        repo: FromDishka[TrackRequestRepository],
     ) -> TrackRequestService:
         """
         Возвращает экземпляр сервиса для обработки запросов на треки.

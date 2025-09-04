@@ -29,7 +29,7 @@ if config.config_file_name is not None:
 
 # Заменяем параметр sqlalchemy.url на наш указатель к БД.
 config.set_main_option(
-    "sqlalchemy.url", settings.postgres.async_database_dsn + "?async_fallback=true"
+    "sqlalchemy.url", settings.postgres.async_database_dsn + "?async_fallback=true",
 )
 
 

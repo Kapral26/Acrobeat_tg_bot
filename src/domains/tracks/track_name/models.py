@@ -45,11 +45,15 @@ class TrackNameRegistry(Base):
 
     # Связь с моделью пользователя
     user: Mapped["User"] = relationship(
-        "User", back_populates="track_names", lazy="joined"
+        "User",
+        back_populates="track_names",
+        lazy="joined",
     )
 
     __table_args__ = (
         UniqueConstraint(
-            "user_id", "track_part", name="uix_user_track_part"
+            "user_id",
+            "track_part",
+            name="uix_user_track_part",
         ),  # Уникальность пары (пользователь, часть названия)
     )

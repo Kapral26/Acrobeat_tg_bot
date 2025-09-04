@@ -94,7 +94,8 @@ class UserService:
         return UsersSchema.model_validate(user)
 
     async def get_user_track_names(
-        self, user_id: int
+        self,
+        user_id: int,
     ) -> list[TrackNamePartSchema] | None:
         """
         Получает список частей названий треков, связанных с пользователем.
@@ -105,22 +106,25 @@ class UserService:
         :return: Список частей названий треков или `None`.
         """
         if user_tracks := await self.user_cache_repository.get_user_track_names(
-            user_id
+            user_id,
         ):
             pass
         else:
             user_tracks = await self.user_repository.get_user_track_names(user_id)
             if user_tracks:
-                user_tracks = [
-                    TrackNamePartSchema.model_validate(x) for x in user_tracks
-                ]
+                user_tracks = [TrackNamePartSchema.model_validate(x) for x in user_tracks]
                 await self.user_cache_repository.set_user_track_names(
-                    user_id=user_id, track_names=user_tracks
+                    user_id=user_id,
+                    track_names=user_tracks,
                 )
         return user_tracks
 
     async def set_user_track_names(
-        self, user_id: int, second_name: str, first_name: str, year_of_birth: int
+        self,
+        user_id: int,
+        second_name: str,
+        first_name: str,
+        year_of_birth: int,
     ) -> None:
         """
         Устанавливает часть названия трека для пользователя.

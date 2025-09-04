@@ -43,7 +43,7 @@ class TrackService:
     cleaner_service: TrackClipMsgCleanerService
 
     @staticmethod
-    async def __send_track(
+    async def __send_track(  # noqa: PLR0913
         path: Path,
         bot: Bot,
         chat_id: int,
@@ -64,15 +64,15 @@ class TrackService:
         """
         async with aiofiles.open(path, "rb") as f:
             file_content = await f.read()
-            send_message = await bot.send_document(
+            return await bot.send_document(
                 chat_id=chat_id,
                 document=types.input_file.BufferedInputFile(
-                    file_content, filename=f"{file_name}.mp3"
+                    file_content,
+                    filename=f"{file_name}.mp3",
                 ),
                 caption=message_text,
                 reply_markup=keyboard,
             )
-            return send_message
 
     async def download_full_track(
         self,
@@ -90,7 +90,9 @@ class TrackService:
         chat_id = message.chat.id
         try:
             track_path = await self.downloader_service.download_track(
-                download_params=download_params, bot=bot, chat_id=chat_id
+                download_params=download_params,
+                bot=bot,
+                chat_id=chat_id,
             )
         except Exception as e:
             logger.exception(f"Ошибка при загрузке трека: {e}")  # noqa: TRY401
@@ -106,14 +108,13 @@ class TrackService:
             bot=bot,
             chat_id=chat_id,
             file_name="example",
-            message_text="🎵 Трек загружен.\nПрослушайте и укажите, с какого "
-            "момента нужно начать обрезку",
+            message_text="🎵 Трек загружен.\nПрослушайте и укажите, с какого момента нужно начать обрезку",
             keyboard=keyboard,
         )
 
         return track_path
 
-    async def download_clipped_track(
+    async def download_clipped_track(  # noqa: PLR0913
         self,
         track_path: Path,
         track_name: str,
@@ -139,7 +140,10 @@ class TrackService:
             finish=state_data["period_end"],
         )
         cliper_track_path = await self.track_cliper_service.clip_track(
-            track_path=track_path, bot=bot, chat_id=chat_id, clip_period=clip_period
+            track_path=track_path,
+            bot=bot,
+            chat_id=chat_id,
+            clip_period=clip_period,
         )
 
         keyboard = await cliper_result_kb()
@@ -155,8 +159,9 @@ class TrackService:
             keyboard=keyboard,
         )
         logger.debug(
-            f"Collect mgs_id: {send_track_message.message_id} download_clipped_track"
+            f"Collect mgs_id: {send_track_message.message_id} download_clipped_track",
         )
         await self.cleaner_service.collect_cliper_messages_to_delete(
-            message_id=send_track_message.message_id, user_id=user_id
+            message_id=send_track_message.message_id,
+            user_id=user_id,
         )

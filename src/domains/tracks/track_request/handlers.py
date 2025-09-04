@@ -81,7 +81,7 @@ async def _handle_request_tracks(
     await callback.answer("Сейчас посмотрим, что вы искали ранее...")
 
     user_track_requests = await track_request_service.get_track_user_request(
-        callback.from_user.id
+        callback.from_user.id,
     )
 
     if not user_track_requests:
@@ -108,7 +108,7 @@ async def _handle_request_tracks(
 @inject
 async def callback_query(
     callback: CallbackQuery,
-    state: FSMContext,
+    state: FSMContext,  # noqa: ARG001
     user_service: FromDishka[UserService],
 ) -> None:
     """

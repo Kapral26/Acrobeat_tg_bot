@@ -1,4 +1,5 @@
 """Модуль с провайдерами сервисных зависимостей."""
+
 from dishka import FromDishka, Provider, Scope, provide
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
@@ -33,7 +34,8 @@ class DatabaseProvider(Provider):
         :param settings: Объект настроек, из которого берётся DSN для подключения к БД.
         :return: Экземпляр AsyncEngine.
         """
-        from sqlalchemy.ext.asyncio import create_async_engine
+        from sqlalchemy.ext.asyncio import create_async_engine  # noqa: PLC0415
+
         return create_async_engine(
             url=settings.postgres.async_database_dsn,
             echo=settings.debug,
@@ -71,5 +73,7 @@ class RedisProvider(Provider):
         :return: Экземпляр клиента Redis.
         """
         return Redis(
-            host=settings.redis.host, port=settings.redis.port, db=settings.redis.db
+            host=settings.redis.host,
+            port=settings.redis.port,
+            db=settings.redis.db,
         )

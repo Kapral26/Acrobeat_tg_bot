@@ -1,4 +1,5 @@
 """Основной модуль бота."""
+
 import asyncio
 
 from aiogram import Bot, Dispatcher
@@ -28,7 +29,7 @@ class TelegramBot:
         self.dp = Dispatcher(storage=self.storage)
 
         container = create_container()
-        configure_logging(debug=settings.debug)
+        configure_logging()
         # Подключаем контейнер к диспетчеру
         setup_dishka(container, self.dp)
         self._register_routers()

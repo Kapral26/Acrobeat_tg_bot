@@ -73,9 +73,7 @@ async def kb_discipline() -> InlineKeyboardMarkup:
 
     for i in range(0, len(disciplines), 2):
         row = disciplines[i : i + 2]
-        buttons = [
-            InlineKeyboardButton(text=d, callback_data=f"discipline:{d}") for d in row
-        ]
+        buttons = [InlineKeyboardButton(text=d, callback_data=f"discipline:{d}") for d in row]
         builder.row(*buttons)
 
     builder.row(
@@ -91,9 +89,11 @@ async def kb_track_name_pagination(
     total_pages: int,
 ) -> InlineKeyboardMarkup:
     """
-    Создаёт клавиатуру с пагинацией для отображения сохранённых частей названий треков пользователя.
+    Создаёт клавиатуру с пагинацией для отображения сохранённых
+     частей названий треков пользователя.
 
-    Использует общую функцию `create_paginated_keyboard` для генерации кнопок с учётом текущей страницы и общего количества страниц.
+    Использует общую функцию `create_paginated_keyboard` для генерации кнопок
+     с учётом текущей страницы и общего количества страниц.
     Добавляет нижнюю кнопку для возврата к вводу нового названия.
 
     :param user_track_parts: Список частей названий треков пользователя.
@@ -101,7 +101,7 @@ async def kb_track_name_pagination(
     :param total_pages: Общее количество страниц.
     :return: Объект `InlineKeyboardMarkup`.
     """
-    kb = await create_paginated_keyboard(
+    return await create_paginated_keyboard(
         items=user_track_parts,
         item_params="track_part",
         page=page,
@@ -110,4 +110,16 @@ async def kb_track_name_pagination(
         bt_pagin_prefix="track_name_page",
         bottom_buttons=[await bt_prompt_track_name()],
     )
-    return kb
+
+
+async def kb_prompt_track_name() -> InlineKeyboardMarkup:
+    """
+    Создаёт клавиатуру с кнопкой для перехода к ручному вводу нового названия трека.
+
+    Используется в интерфейсе выбора между использованием сохранённого названия или вводом нового.
+
+    :return: Объект `InlineKeyboardMarkup`.
+    """
+    builder = InlineKeyboardBuilder()
+    builder.row(await bt_prompt_track_name())
+    return builder.as_markup()

@@ -33,11 +33,7 @@ class PostgresSettings(BaseSettings):
 
         :return: Строка DSN.
         """
-        return (
-            f"postgresql+asyncpg://{self.user}:"
-            f"{self.password.get_secret_value()}@"
-            f"{self.host}:{self.port}/{self.db}"
-        )
+        return f"postgresql+asyncpg://{self.user}:{self.password.get_secret_value()}@{self.host}:{self.port}/{self.db}"
 
     class Config:
         """Настройки Pydantic для класса PostgresSettings."""
@@ -79,7 +75,7 @@ class Settings(BaseSettings):
 
     model_config = {
         "env_nested_delimiter": "__",  # Разделитель для вложенных переменных окружения
-        "case_insensitive": True,       # Игнорирование регистра при чтении переменных окружения
+        "case_insensitive": True,  # Игнорирование регистра при чтении переменных окружения
     }
 
 

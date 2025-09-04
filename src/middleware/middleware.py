@@ -63,15 +63,13 @@ class RateLimitMiddleware(BaseMiddleware):
 
         # Удаляем временные метки, которые вышли за пределы временного окна
         if chat_id in self.timestamps_by_chat:
-            self.timestamps_by_chat[chat_id] = [
-                t for t in self.timestamps_by_chat[chat_id] if t >= window_start
-            ]
+            self.timestamps_by_chat[chat_id] = [t for t in self.timestamps_by_chat[chat_id] if t >= window_start]
 
         # Проверяем, превышен ли лимит запросов
         if len(self.timestamps_by_chat.get(chat_id, [])) >= self.limit:
             wait_time = self.per_seconds - (now - self.timestamps_by_chat[chat_id][0])
             logger.warning(
-                f"Rate limit exceeded in chat {chat_id}. Waiting {wait_time:.2f} seconds."
+                f"Rate limit exceeded in chat {chat_id}. Waiting {wait_time:.2f} seconds.",
             )
             await asyncio.sleep(wait_time)
             self.timestamps_by_chat[chat_id] = [time.time()]

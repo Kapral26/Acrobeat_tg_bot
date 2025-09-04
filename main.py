@@ -14,10 +14,9 @@ logger = logging.getLogger(__name__)
 class GracefulExit(SystemExit):
     """Исключение, используемое для мягкого завершения работы бота при получении сигнала остановки."""
 
-    pass
 
 
-def handle_shutdown(signum: int, frame: FrameType | None) -> Never: # noqa
+def handle_shutdown(signum: int, frame: FrameType | None) -> Never:  # noqa: ARG001
     """
     Обработчик сигналов SIGINT и SIGTERM.
 
@@ -28,7 +27,7 @@ def handle_shutdown(signum: int, frame: FrameType | None) -> Never: # noqa
     :param frame: Текущий фрейм стека.
     """
     logger.info(f"Получен сигнал {signum}, завершение работы...")
-    raise GracefulExit()
+    raise GracefulExit
 
 
 async def main() -> None:
@@ -45,7 +44,7 @@ async def main() -> None:
     # Регистрируем обработчики сигналов
     loop = asyncio.get_event_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, handle_shutdown) # noqa
+        loop.add_signal_handler(sig, handle_shutdown)
 
     try:
         await bot.start()

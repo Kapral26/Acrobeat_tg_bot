@@ -1,4 +1,5 @@
 """Модуль с классами фильтра для логгирования."""
+
 import logging
 
 
@@ -26,7 +27,4 @@ class OwnLoggerFilter(logging.Filter):
         :param record: Объект лог-записи, переданный из логгера.
         :return: `True`, если имя логгера соответствует одному из допустимых префиксов, иначе `False`.
         """
-        for prefix in self.allowed_loggers_prefixes:
-            if record.name.startswith(prefix):
-                return True
-        return False
+        return any(record.name.startswith(prefix) for prefix in self.allowed_loggers_prefixes)

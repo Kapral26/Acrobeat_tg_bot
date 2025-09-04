@@ -11,5 +11,5 @@ routes = [
     track_name_router,
     track_request_router,
     track_cliper_router,
-    track_search_router
+    track_search_router,
 ]

@@ -34,7 +34,8 @@ class TrackRequestRepository:
     session_factory: Callable[[], AsyncSession]
 
     async def insert_track_request(
-        self, track_request_data: TrackRequestSchema
+        self,
+        track_request_data: TrackRequestSchema,
     ) -> Result[tuple[int]]:
         """
         Вставляет новый запрос на трек в базу данных.
@@ -75,12 +76,7 @@ class TrackRequestRepository:
         :return: Список объектов `TrackRequest`, отсортированных по дате (самые новые первыми).
         """
         async with self.session_factory() as session:
-            stmt = (
-                select(TrackRequest)
-                .where(TrackRequest.user_id == user_id)
-                .order_by(desc(TrackRequest.id))
-                .limit(12)
-            )
+            stmt = select(TrackRequest).where(TrackRequest.user_id == user_id).order_by(desc(TrackRequest.id)).limit(12)
             query_result = await session.execute(stmt)
             return query_result.scalars().all()
 

@@ -114,14 +114,15 @@ class DownloaderService:
         :raises Exception: Если произошла другая ошибка.
         """
         logger.debug(
-            f"Downloading track '{download_params.url}', repo: '{download_params.repo_alias}'"
+            f"Downloading track '{download_params.url}', repo: '{download_params.repo_alias}'",
         )
         track_path = Path(gettempdir()) / f"{uuid.uuid4()}.mp3"
 
         repo = self._get_repo(download_params.repo_alias)
 
         url_track = await self.cache_repository.get_track_url(
-            download_params.url, chat_id=chat_id
+            download_params.url,
+            chat_id=chat_id,
         )
 
         try:

@@ -1,5 +1,6 @@
 """
-Модуль `repository.py` содержит реализацию репозитория для обработки аудиофайлов, таких, как вырезка фрагментов и конкатенация треков.
+Модуль `repository.py` содержит реализацию репозитория
+ для обработки аудиофайлов, таких, как вырезка фрагментов и конкатенация треков.
 
 Использует библиотеку `ffmpeg` для выполнения операций с аудио.
 """
@@ -80,11 +81,7 @@ class TrackCliperRepo:
             joined = ffmpeg.concat(beep_input, music_input, v=0, a=1)
             faded = joined.filter("afade", t="out", st=fade_start, d=fade_duration)
 
-            (
-                faded.output(str(output_path), acodec="libmp3lame")
-                .overwrite_output()
-                .run(quiet=True)
-            )
+            (faded.output(str(output_path), acodec="libmp3lame").overwrite_output().run(quiet=True))
 
         await asyncio.to_thread(_concat)
         return output_path

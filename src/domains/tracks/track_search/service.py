@@ -36,7 +36,7 @@ class TrackSearchService:
     Обрабатывает запросы пользователей, выполняет поиск треков и управляет отображением результатов.
     """
 
-    async def search_tracks(
+    async def search_tracks(  # noqa: PLR0913
         self,
         callback: CallbackQuery,
         bot: Bot,
@@ -100,7 +100,7 @@ class TrackSearchService:
 
         await state.set_state(FindTrackStates.WAITING_FOR_PHRASE)
 
-    async def handle_search_results(
+    async def handle_search_results(  # noqa: PLR0913
         self,
         bot: Bot,
         event: CallbackQuery | Message,
@@ -174,8 +174,7 @@ class TrackSearchService:
         """
         message = event.message if isinstance(event, CallbackQuery) else event
         await message.edit_text(
-            "😔 Песни не найдены.\n"
-            "Попробуйте что-то другое или уточните поисковой запрос.",
+            "😔 Песни не найдены.\nПопробуйте что-то другое или уточните поисковой запрос.",
             reply_markup=await get_retry_search_kb(),
         )
 

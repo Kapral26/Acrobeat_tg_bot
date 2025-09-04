@@ -61,6 +61,7 @@ def calculate_clip_duration(start_time: str, end_time: str) -> int:
     end_sec = time_to_seconds(end_time)
 
     if end_sec < start_sec:
-        raise ValueError("Время окончания не может быть меньше времени начала")
+        msg = "Время окончания не может быть меньше времени начала"
+        raise ValueError(msg)
 
     return end_sec - start_sec

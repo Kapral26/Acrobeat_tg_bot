@@ -1,7 +1,9 @@
 """
-Модуль `cache_repository.py` содержит реализацию кэширующего репозитория для временного хранения ссылок на музыкальные треки.
+Модуль `cache_repository.py` содержит реализацию кэширующего репозитория
+ для временного хранения ссылок на музыкальные треки.
 
-Используется Redis для хранения ссылок, что позволяет сократить объём данных, передаваемых в callback_data inline-кнопок бота.
+Используется Redis для хранения ссылок, что позволяет сократить объём данных,
+ передаваемых в callback_data inline-кнопок бота.
 """
 
 import secrets
@@ -57,6 +59,8 @@ class DownloaderCacheRepo:
         track_url_id = secrets.token_hex(8)
         key = f"{chat_id}_track_url:{track_url_id}"
         await self.redis_client.setex(
-            key, CacheTTL.TWO_MINUTES.value, track_url
+            key,
+            CacheTTL.TWO_MINUTES.value,
+            track_url,
         )
         return track_url_id

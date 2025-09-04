@@ -1,7 +1,9 @@
 """
-Модуль `schemas.py` содержит Pydantic-модель для описания временных параметров обрезки аудиофайлов.
+Модуль `schemas.py` содержит Pydantic-модель для описания временных
+ параметров обрезки аудиофайлов.
 
-Определяет схему `ClipPeriodSchema`, которая используется для валидации временных меток и расчёта длительности аудиообрезки.
+Определяет схему `ClipPeriodSchema`, которая используется для валидации
+ временных меток и расчёта длительности аудиообрезки.
 """
 
 from pydantic import BaseModel, computed_field, field_validator
@@ -26,7 +28,7 @@ class ClipPeriodSchema(BaseModel):
     finish: str
 
     @field_validator("start", "finish")
-    def check_time_format(cls, v: str) -> str:
+    def check_time_format(cls, v: str) -> str:  # noqa: N805
         """
         Валидирует формат временной метки.
 
@@ -38,9 +40,8 @@ class ClipPeriodSchema(BaseModel):
         :raises ValueError: Если формат не соответствует `mm:ss`.
         """
         if not is_valid_time_format(v):
-            raise ValueError(
-                f"Неверный формат времени '{v}'. Используйте формат 'mm:ss'"
-            )
+            msg = f"Неверный формат времени '{v}'. Используйте формат 'mm:ss'"
+            raise ValueError(msg)
         return v
 
     @computed_field

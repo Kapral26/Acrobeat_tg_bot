@@ -33,7 +33,9 @@ class UserCacheRepository(RedisClientWrapper):
         super().__init__(self.redis_client)
 
     async def set_user_track_names(
-        self, user_id: int, track_names: list[TrackNamePartSchema]
+        self,
+        user_id: int,
+        track_names: list[TrackNamePartSchema],
     ) -> None:
         """
         Сохраняет список частей названий треков пользователя в Redis.
@@ -50,7 +52,8 @@ class UserCacheRepository(RedisClientWrapper):
             await pipe.execute()
 
     async def get_user_track_names(
-        self, user_id: int
+        self,
+        user_id: int,
     ) -> list[TrackNamePartSchema] | None:
         """
         Получает список частей названий треков пользователя из Redis.
@@ -65,8 +68,4 @@ class UserCacheRepository(RedisClientWrapper):
         async with self.redis_client.pipeline() as pipe:
             await pipe.lrange(key, 0, -1)
             response = await pipe.execute()
-            track_names = [
-                TrackNamePartSchema.model_validate_json(x.decode("utf8"))
-                for x in response[0]
-            ]
-            return track_names
+            return [TrackNamePartSchema.model_validate_json(x.decode("utf8")) for x in response[0]]

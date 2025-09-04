@@ -27,6 +27,7 @@ from src.domains.tracks.service import TrackService
 from src.domains.tracks.track_name.keyboards import (
     kb_back_track_name_prompt_item,
     kb_discipline,
+    kb_prompt_track_name,
     kb_show_final_result,
     kb_track_name_pagination,
 )
@@ -132,12 +133,21 @@ async def _handle_search_tracks(
     user_track_names = await user_service.get_user_track_names(callback.from_user.id)
     keyboard = kb_track_name_pagination
 
+    if not user_track_names:
+        await callback.message.edit_text(
+            """📂 История пуста.\n\n
+Ты ещё не вводил имена спортсменов.\n
+Добавь первый и он будет у тебя в истории 👇""",
+            reply_markup=await kb_prompt_track_name(),
+        )
+        return
+
     await show_msg_pagination(
         callback=callback,
         cleaner_service=cleaner_service,
         page=page,
         keyboard=keyboard,
-        message_text="<b>Ранее вы вводили имена:</b>\n\n",
+        message_text="📂 Ранее ты вводил имена:\n\nВыбери одно из них или задай новое 🎯",
         data=user_track_names,
     )
 
@@ -210,7 +220,8 @@ async def set_first_name(message: Message, state: FSMContext) -> None:
     await state.update_data(second_name=second_name.capitalize())
     await state.set_state(TrackNameStates.FIRST_NAME)
     await message.answer(
-        "Введите инициалы", reply_markup=kb_back_track_name_prompt_item()
+        "Введите инициалы",
+        reply_markup=kb_back_track_name_prompt_item(),
     )
 
 
@@ -233,14 +244,17 @@ async def set_year_of_birth(message: Message, state: FSMContext) -> None:
     await state.update_data(first_name=first_name.upper())
     await state.set_state(TrackNameStates.YEAR_OF_BIRTH)
     await message.answer(
-        "Введите год рождения", reply_markup=kb_back_track_name_prompt_item()
+        "Введите год рождения",
+        reply_markup=kb_back_track_name_prompt_item(),
     )
 
 
 @track_name_router.message(TrackNameStates.YEAR_OF_BIRTH)
 @inject
 async def choose_discipline(
-    message: Message, state: FSMContext, user_service: FromDishka[UserService]
+    message: Message,
+    state: FSMContext,
+    user_service: FromDishka[UserService],
 ) -> None:
     """
     Обработчик ввода года рождения.
@@ -258,10 +272,10 @@ async def choose_discipline(
         return
 
     year = int(year_of_birth)
-    current_year = datetime.now().year
+    current_year = datetime.now().year  # noqa: DTZ005
 
     # Проверка: год в допустимом диапазоне
-    if not (1970 <= year < current_year):
+    if not (1970 <= year < current_year):  # noqa: PLR2004
         await message.answer(f"Год рождения должен быть от 1970 до {current_year - 1}")
         return
 
@@ -385,13 +399,15 @@ async def go_back(callback: CallbackQuery, state: FSMContext) -> None:
     elif current_state == TrackNameStates.YEAR_OF_BIRTH.state:
         await state.set_state(TrackNameStates.FIRST_NAME)
         await callback.message.edit_text(
-            "Введите инициалы", reply_markup=kb_back_track_name_prompt_item()
+            "Введите инициалы",
+            reply_markup=kb_back_track_name_prompt_item(),
         )
 
     elif current_state == TrackNameStates.DISCIPLINE.state:
         await state.set_state(TrackNameStates.YEAR_OF_BIRTH)
         await callback.message.edit_text(
-            "Введите год рождения", reply_markup=kb_back_track_name_prompt_item()
+            "Введите год рождения",
+            reply_markup=kb_back_track_name_prompt_item(),
         )
 
     elif current_state == TrackNameStates.CUSTOM_DISCIPLINE.state:
@@ -402,7 +418,10 @@ async def go_back(callback: CallbackQuery, state: FSMContext) -> None:
 
 
 async def show_final_result(
-    message: Message, user_id: int, state: FSMContext, user_service: UserService
+    message: Message,
+    user_id: int,
+    state: FSMContext,
+    user_service: UserService,
 ) -> Message:
     """
     Отображает финальный результат введённого названия трека.
@@ -417,7 +436,7 @@ async def show_final_result(
     """
     track_name: str = await get_track_name(state)
     await user_service.set_session_track_names(user_id=user_id, track_name=track_name)
-    send_msg = await message.answer(
+    return await message.answer(
         f"""
         📌 Ты выбрал название трека:\n
 
@@ -428,7 +447,6 @@ async def show_final_result(
         reply_markup=await kb_show_final_result(),
         parse_mode=ParseMode.HTML,
     )
-    return send_msg
 
 
 async def show_discipline_interface(event: CallbackQuery | Message) -> Message:
@@ -459,7 +477,7 @@ async def show_discipline_interface(event: CallbackQuery | Message) -> Message:
 
 @track_name_router.callback_query(F.data == "confirm_input")
 @inject
-async def confirm_input(
+async def confirm_input(  # noqa: PLR0913
     callback: CallbackQuery,
     bot: Bot,
     state: FSMContext,
@@ -486,7 +504,9 @@ async def confirm_input(
     :param cleaner_service: Сервис для управления временными сообщениями.
     """
     await cleaner_service.drop_clip_params_message(
-        bot=bot, user_id=callback.from_user.id, chat_id=callback.from_user.id
+        bot=bot,
+        user_id=callback.from_user.id,
+        chat_id=callback.from_user.id,
     )
 
     state_data = await state.get_data()
@@ -506,7 +526,9 @@ async def confirm_input(
         download_params = DownloadTrackParams(**download_params)
         await user_service.del_session_query_text(callback.from_user.id)
         track_path = await track_service.download_full_track(
-            message=callback.message, download_params=download_params, bot=bot
+            message=callback.message,
+            download_params=download_params,
+            bot=bot,
         )
         await state.set_data({"track_path": track_path})
 
@@ -519,7 +541,4 @@ async def get_track_name(state: FSMContext) -> str:
     :return: Строка с полным названием трека.
     """
     data = await state.get_data()
-    return (
-        f"{data['second_name']}_{data['first_name']}"
-        f"_{data['year_of_birth']}_{data['discipline']}"
-    )
+    return f"{data['second_name']}_{data['first_name']}_{data['year_of_birth']}_{data['discipline']}"

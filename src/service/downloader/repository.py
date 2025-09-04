@@ -1,5 +1,6 @@
 """
-Модуль `repository.py` содержит реализацию репозиториев для поиска и загрузки музыкальных треков.
+Модуль `repository.py` содержит реализацию репозиториев
+ для поиска и загрузки музыкальных треков.
 
 Реализованы следующие репозитории:
 - `DownloaderRepoYT`: Поиск и загрузка с YouTube.
@@ -7,7 +8,8 @@
 - `TelegramDownloaderRepo`: Загрузка файлов из Telegram.
 - `DownloaderRepoHitmo`: Поиск и загрузка с сайта Hitmotop.
 
-Каждый репозиторий реализует интерфейс `DownloaderAbstractRepo`, предоставляя методы `find_tracks_on_phrase` и `download_track`.
+Каждый репозиторий реализует интерфейс `DownloaderAbstractRepo`,
+ предоставляя методы `find_tracks_on_phrase` и `download_track`.
 """
 
 import asyncio
@@ -16,6 +18,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import quote, urljoin
 
+import aiofiles
 import httpx
 from aiogram import Bot
 from bs4 import BeautifulSoup
@@ -80,7 +83,7 @@ class DownloaderRepoYT(DownloaderAbstractRepo):
                 logger.exception("YT Download failed")
                 raise
 
-    async def download_track(self, bot: Bot, url: str, output_path: Path) -> None:
+    async def download_track(self, bot: Bot, url: str, output_path: Path) -> None:  # noqa: ARG002
         """
         Асинхронная загрузка трека с YouTube.
 
@@ -101,7 +104,10 @@ class DownloaderRepoYT(DownloaderAbstractRepo):
             logger.exception("⚠️ Ошибка загрузки")
 
     def _search_track(
-        self, query: str, chat_id: int = 0, max_results: int = 3
+        self,
+        query: str,
+        chat_id: int = 0,  # noqa: ARG002
+        max_results: int = 3,
     ) -> list[dict]:
         """
         Поиск треков на YouTube по ключевой фразе.
@@ -122,7 +128,9 @@ class DownloaderRepoYT(DownloaderAbstractRepo):
             return info["entries"]
 
     async def find_tracks_on_phrase(
-        self, query: str, chat_id: int
+        self,
+        query: str,
+        chat_id: int,
     ) -> list[dict] | None:
         """
         Асинхронный поиск треков по ключевой фразе.
@@ -150,7 +158,8 @@ class DownloaderRepoYT(DownloaderAbstractRepo):
 
         for item in results:
             item["webpage_url"] = await self.cache_repository.set_track_url(
-                item["url"], chat_id
+                item["url"],
+                chat_id,
             )
 
         return results
@@ -238,14 +247,15 @@ class DownloaderRepoPinkamuz(DownloaderAbstractRepo):
                 href = download_tag.get("href")
                 full_url = urljoin("https://track.pinkamuz.pro", href)
                 url_cache_id = await self.cache_repository.set_track_url(
-                    full_url, chat_id
+                    full_url,
+                    chat_id,
                 )
                 results.append(
                     {
                         "title": title,
                         "webpage_url": url_cache_id,
                         "duration": duration,
-                    }
+                    },
                 )
 
             return results
@@ -271,10 +281,10 @@ class DownloaderRepoPinkamuz(DownloaderAbstractRepo):
             response = await client.get(url, headers=self.headers)
             response.raise_for_status()
 
-            with open(output_path, "wb") as f:
-                f.write(response.content)
+            async with aiofiles.open(output_path, mode="wb") as f:
+                await f.write(response.content)
 
-    async def download_track(self, bot: Bot, url: str, output_path: Path) -> None:
+    async def download_track(self, bot: Bot, url: str, output_path: Path) -> None:  # noqa: ARG002
         """
         Асинхронная загрузка трека.
 
@@ -302,15 +312,17 @@ class TelegramDownloaderRepo(DownloaderAbstractRepo):
 
     def _download(self, url: str, output_path: Path) -> None:
         """Заглушка — не используется."""
-        pass
 
     def _search_track(
-        self, query: str, chat_id: int = 0, max_results: int = 3
+        self,
+        query: str,  # noqa: ARG002
+        chat_id: int = 0,  # noqa: ARG002
+        max_results: int = 3,  # noqa: ARG002
     ) -> list[None]:
         """Заглушка — не используется."""
         return []
 
-    async def find_tracks_on_phrase(self, query: str, chat_id: int) -> list[None]:
+    async def find_tracks_on_phrase(self, query: str, chat_id: int) -> list[None]:  # noqa: ARG002
         """Заглушка — не используется."""
         return []
 
@@ -326,8 +338,9 @@ class TelegramDownloaderRepo(DownloaderAbstractRepo):
         try:
             file = await bot.get_file(file_id)
             await bot.download_file(file.file_path, destination=output_path)
-        except Exception as e:
-            raise RuntimeError(f"Ошибка при загрузке файла из Telegram: {e}")
+        except Exception as e:  # noqa: BLE001
+            msg = f"Ошибка при загрузке файла из Telegram: {e}"
+            raise RuntimeError(msg)
 
 
 @dataclass
@@ -410,7 +423,8 @@ class DownloaderRepoHitmo(DownloaderAbstractRepo):
 
                 download_url = urljoin(self.base_url, download_tag["href"])
                 url_cache_id = await self.cache_repository.set_track_url(
-                    download_url, chat_id
+                    download_url,
+                    chat_id,
                 )
 
                 results.append(
@@ -418,7 +432,7 @@ class DownloaderRepoHitmo(DownloaderAbstractRepo):
                         "title": f"{artist} - {title}",
                         "webpage_url": url_cache_id,
                         "duration": duration,
-                    }
+                    },
                 )
 
             return results
@@ -444,10 +458,10 @@ class DownloaderRepoHitmo(DownloaderAbstractRepo):
             response = await client.get(url, headers=self.headers)
             response.raise_for_status()
 
-            with open(output_path, "wb") as f:
-                f.write(response.content)
+            async with aiofiles.open(output_path, "wb") as f:
+                await f.write(response.content)
 
-    async def download_track(self, bot: Bot, url: str, output_path: Path) -> None:
+    async def download_track(self, bot: Bot, url: str, output_path: Path) -> None:  # noqa: ARG002
         """
         Асинхронная загрузка трека.
 

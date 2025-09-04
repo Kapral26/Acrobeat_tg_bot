@@ -27,7 +27,8 @@ class TrackRequest(Base):
     __tablename__ = "track_requests"
 
     id: Mapped[int] = mapped_column(
-        primary_key=True, autoincrement=True
+        primary_key=True,
+        autoincrement=True,
     )
     user_id: Mapped[int] = mapped_column(
         BigInteger,
@@ -35,7 +36,8 @@ class TrackRequest(Base):
         nullable=False,
     )
     query_text: Mapped[str] = mapped_column(
-        Text, nullable=False
+        Text,
+        nullable=False,
     )
 
     # Связь с моделью пользователя
@@ -43,6 +45,8 @@ class TrackRequest(Base):
 
     __table_args__ = (
         UniqueConstraint(
-            "user_id", "query_text", name="uq_user_query"
+            "user_id",
+            "query_text",
+            name="uq_user_query",
         ),  # Уникальность пары (пользователь, запрос)
     )

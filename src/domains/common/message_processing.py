@@ -1,24 +1,38 @@
+"""
+Модуль содержит утилиты для отображения индикатора загрузки во время выполнения асинхронных операций.
+
+Позволяет запускать указанную асинхронную функцию, одновременно показывая в чате анимацию загрузки.
+После завершения операции сообщение с индикатором удаляется.
+
+Используется для улучшения пользовательского опыта при длительных операциях, таких как поиск треков,
+загрузка аудио и т.п.
+"""
+
 import asyncio
 from typing import Any
 
 from aiogram import Bot
 
 SPINNER_FRAMES = [
-    f"⠋",
-    f"⠙",
-    f"⠹",
-    f"⠸",
-    f"⠼",
-    f"⠴",
-    f"⠦",
-    f"⠧",
-    f"⠇",
-    f"⠏",
+    "⠋",
+    "⠙",
+    "⠹",
+    "⠸",
+    "⠼",
+    "⠴",
+    "⠦",
+    "⠧",
+    "⠇",
+    "⠏",
 ]
 
 
 async def processing_msg(
-    func: callable, args: tuple, bot: Bot, chat_id: int, spinner_msg: str
+    func: callable,
+    args: tuple,
+    bot: Bot,
+    chat_id: int,
+    spinner_msg: str,
 ) -> Any:  # noqa: ANN401
     """
     Асинхронная функция для отображения анимации загрузки во время выполнения задачи.
@@ -33,10 +47,7 @@ async def processing_msg(
     :param spinner_msg: Строка-шаблон сообщения. Должна содержать `{spinner_item}` для подстановки символа индикатора.
     :return: Результат выполнения функции `func`.
     """
-    spinner = [
-        spinner_msg.format(spinner_item=frame)
-        for frame in SPINNER_FRAMES
-    ]
+    spinner = [spinner_msg.format(spinner_item=frame) for frame in SPINNER_FRAMES]
     index = 0
     loading_msg = await bot.send_message(chat_id=chat_id, text=spinner[index])
     task = asyncio.create_task(func(*args))

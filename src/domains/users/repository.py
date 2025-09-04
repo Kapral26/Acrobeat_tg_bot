@@ -39,14 +39,11 @@ class UserRepository:
         :param user_data: Данные пользователя.
         """
         async with self.session_factory() as session:
-            stmt = (
-                insert(User)
-                .values(
-                    id=user_data.id,
-                    username=user_data.username,
-                    first_name=user_data.first_name,
-                    last_name=user_data.last_name,
-                )
+            stmt = insert(User).values(
+                id=user_data.id,
+                username=user_data.username,
+                first_name=user_data.first_name,
+                last_name=user_data.last_name,
             )
             try:
                 await session.execute(stmt)
@@ -131,7 +128,7 @@ class UserRepository:
             )
             try:
                 await session.execute(stmt)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 await session.rollback()
             else:
                 await session.commit()

@@ -44,7 +44,7 @@ class TrackRequestService:
         logger.info(f"Inserting track request {query_text}")
         try:
             await self.track_request_repository.insert_track_request(
-                TrackRequestSchema(user_id=user_id, query_text=query_text)
+                TrackRequestSchema(user_id=user_id, query_text=query_text),
             )
         except Exception as e:
             logger.exception(f"Failed to insert track request {query_text}: {e}")  # noqa: TRY401
@@ -61,16 +61,13 @@ class TrackRequestService:
         logger.info(f"Getting track request {user_id}")
         try:
             track_requests = await self.track_request_repository.get_track_user_request(
-                user_id
+                user_id,
             )
         except Exception as e:
             logger.exception(f"Failed to get track request {user_id}: {e}")  # noqa: TRY401
             raise
         else:
-            return [
-                TrackRequestSchema(user_id=x.user_id, query_text=x.query_text)
-                for x in track_requests
-            ]
+            return [TrackRequestSchema(user_id=x.user_id, query_text=x.query_text) for x in track_requests]
 
     async def get_track_request(self) -> list[TrackRequestSchema]:
         """
@@ -79,7 +76,7 @@ class TrackRequestService:
         :return: Список объектов `TrackRequestSchema`.
         :raises Exception: Передаёт ошибки из репозитория при неудачном получении.
         """
-        logger.info(f"Getting top track request")
+        logger.info("Getting top track request")
         try:
             track_requests = await self.track_request_repository.get_track_request()
         except Exception as e:

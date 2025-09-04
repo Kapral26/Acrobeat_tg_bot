@@ -26,14 +26,18 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(
-        BigInteger(), primary_key=True, index=True,
+        BigInteger(),
+        primary_key=True,
+        index=True,
     )
     username: Mapped[str] = mapped_column(
-        String(64), nullable=False,
+        String(64),
+        nullable=False,
     )
-    first_name: Mapped[str] = mapped_column(String(64),)
+    first_name: Mapped[str] = mapped_column(String(64))
     last_name: Mapped[str] = mapped_column(
-        String(128), nullable=True,
+        String(128),
+        nullable=True,
     )
 
     track_names: Mapped[list["TrackNameRegistry"]] = relationship(

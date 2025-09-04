@@ -24,7 +24,7 @@ track_search_router = Router(name="track_search_router")
 
 @track_search_router.callback_query(F.data == "find_track")
 @inject
-async def handler_search_tracks(
+async def handler_search_tracks(  # noqa: PLR0913
     callback: types.CallbackQuery,
     bot: Bot,
     downloader_service: FromDishka[DownloaderService],
@@ -59,7 +59,7 @@ async def handler_search_tracks(
 
 @track_search_router.callback_query(F.data == "find_new_track")
 @inject
-async def handler_search_tracks(
+async def handler_search_new_tracks(
     callback: types.CallbackQuery,
     track_search_service: FromDishka[TrackSearchService],
     user_service: FromDishka[UserService],
@@ -81,7 +81,7 @@ async def handler_search_tracks(
 
 @track_search_router.message(FindTrackStates.WAITING_FOR_PHRASE)
 @inject
-async def handle_preview_search_track(
+async def handle_preview_search_track(  # noqa: PLR0913
     message: types.Message,
     bot: Bot,
     downloader: FromDishka[DownloaderService],
@@ -102,7 +102,8 @@ async def handle_preview_search_track(
     :param user_service: Сервис для работы с пользователями.
     """
     await user_service.set_session_query_text(
-        user_id=message.from_user.id, query_text=message.text
+        user_id=message.from_user.id,
+        query_text=message.text,
     )
     await track_search_service.handle_search_results(
         bot=bot,
@@ -117,7 +118,7 @@ async def handle_preview_search_track(
 
 @track_search_router.callback_query(F.data.startswith("skip_repo:"))
 @inject
-async def request_skip_repo(
+async def request_skip_repo(  # noqa: PLR0913
     callback: types.CallbackQuery,
     bot: Bot,
     downloader: FromDishka[DownloaderService],

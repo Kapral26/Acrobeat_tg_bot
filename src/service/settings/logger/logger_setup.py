@@ -9,6 +9,8 @@ from pathlib import Path
 
 import yaml
 
+from src.service.settings.config import Settings
+
 # Путь к конфигурационному файлу логгирования
 CONFIG_PATH = Path(__file__).parent / "config.yaml"
 
@@ -16,8 +18,10 @@ CONFIG_PATH = Path(__file__).parent / "config.yaml"
 LOG_DIR = Path("logs")
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
+settings = Settings()
 
-def configure_logging(debug: bool = True) -> None:
+
+def configure_logging(*, debug: bool = settings.debug) -> None:
     """
     Настраивает логгирование приложения на основе конфигурации из файла.
 
@@ -27,7 +31,7 @@ def configure_logging(debug: bool = True) -> None:
     :param debug: Если `True`, уровень логгирования устанавливается в DEBUG.
     """
     # Загрузка базовой конфигурации из YAML
-    with open(CONFIG_PATH, encoding="utf-8") as f:
+    with CONFIG_PATH.open(encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
     logging_config = {
@@ -69,5 +73,5 @@ def configure_logging(debug: bool = True) -> None:
         root_logger.setLevel(logging.DEBUG)
 
         # Установка уровня DEBUG для указанных логгеров
-        for logger_name in config["logging"]["loggers"].keys():
+        for logger_name in config["logging"]["loggers"]:
             logging.getLogger(logger_name).setLevel(logging.DEBUG)

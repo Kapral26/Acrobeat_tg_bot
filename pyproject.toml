@@ -30,10 +30,24 @@ dependencies = [
     "yt-dlp>=2025.8.11",
 ]
 
-
 [tool.ruff]
-# Выбранные категории проверок
-lint.select = [
+target-version = "py312"
+line-length = 120
+exclude = [
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "node_modules",
+    ".git",
+    ".idea",
+    "pgdata",
+    "logs",
+    "migrations",
+]
+
+[tool.ruff.lint]
+select = [
     "W", # Warnings
     "B", # Best practices
     "Q", # Quotes
@@ -49,11 +63,11 @@ lint.select = [
     "TCH", # Type checking
     "ANN", # Type annotations
 ]
-
 extend-select = ["ALL"]
 extend-ignore = [
     # Документирование и форматирование docstring
     "D107", # Missing docstring in public module
+    "D104", # Missing docstring in public package
     "D203", # One blank line required before class docstring
     "D212", # Multi-line docstring summary should start at first line
     "D205", # 2 blank lines required after last section of a docstring
@@ -61,7 +75,6 @@ extend-ignore = [
     "D415", # First line missing period
 
     # Стиль кода и аннотации
-    "ANN101", # Missing type annotation in function
     "ANN002", # Missing type annotation for parameter
     "ANN003", # Missing type annotation for return
     "ANN204", # Missing type annotation for variable
@@ -82,38 +95,13 @@ extend-ignore = [
 
     # Общие
     "B904", # Yield after return
-    "TCH003", # Incorrect typing import
-]
+    "TC003", # Incorrect typing import
 
-# Правила, которые можно автоматически исправлять
+    "G004", # Logging statement uses f-string
+]
 fixable = ["ALL"]
-
-# Исключить директории из проверки
-exclude = [
-    ".venv",
-    "__pycache__",
-    "build",
-    "dist",
-    "node_modules",
-    ".git",
-    ".idea",
-    "pgdata",
-    "logs",
-]
-
-# Максимальная длина строки
-line-length = 120
-
-# Целевая версия Python
-target-version = "py312"
-
-# Правила, которые не подлежат автоматической фиксации
 unfixable = []
 
-# Форматирование
 [tool.ruff.format]
-# Включить переформатирование кода в docstring
 docstring-code-format = true
-# Стиль кавычек
 quote-style = "double"
-

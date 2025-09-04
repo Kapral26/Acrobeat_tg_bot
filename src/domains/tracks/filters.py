@@ -10,7 +10,7 @@ from aiogram.filters import BaseFilter
 from aiogram.types import Message
 
 YOUTUBE_REGEX = re.compile(
-    r"^(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu\.be/)[\w\-]+(\?\S*)?$"
+    r"^(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu\.be/)[\w\-]+(\?\S*)?$",
 )
 
 
@@ -33,6 +33,4 @@ class YouTubeLinkFilter(BaseFilter):
 
         text = message.text.strip()
 
-        if YOUTUBE_REGEX.match(text):
-            return True
-        return False
+        return bool(YOUTUBE_REGEX.match(text))

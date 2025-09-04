@@ -6,7 +6,8 @@
     - сервис для обработки запросов;
     - зависимости между ними (Redis, конфигурация);
 
-Этот модуль используется в контейнере зависимостей (`create_container`) для автоматического управления жизненным циклом объектов.
+Этот модуль используется в контейнере зависимостей (`create_container`)
+ для автоматического управления жизненным циклом объектов.
 """
 
 from dishka import FromDishka, Provider, Scope, provide
@@ -100,7 +101,7 @@ class DownloaderProvider(Provider):
         return TelegramDownloaderRepo()
 
     @provide(scope=Scope.REQUEST)
-    async def get_service(
+    async def get_service(  # noqa: PLR0913
         self,
         repository_yt: FromDishka[DownloaderRepoYT],
         repository_pinkamuz: FromDishka[DownloaderRepoPinkamuz],
