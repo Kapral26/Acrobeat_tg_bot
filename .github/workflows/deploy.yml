@@ -17,8 +17,8 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: 🔍 Debug SSH
-        run: ssh -vvv -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "whoami && ls -ld /var/www"
+      - name: 🧪 Test SSH connection
+        run: ssh -o StrictHostKeyChecking=no root@${{ secrets.VPS_HOST }} "echo ✅ Connected"
 
       - name: 📦 Copy files to VPS
         run: |
