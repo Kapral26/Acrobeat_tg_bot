@@ -5,6 +5,49 @@ on:
     branches: [ main ]
 
 jobs:
+  changelog:
+    name: "📝 Generate Changelog"
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    outputs:
+      has_changes: ${{ steps.generate-changelog.outputs.has_changes }}
+    steps:
+      - name: "📦 Checkout code"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "🐍 Setup Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: "📋 Install changelog generator"
+        run: pip install git+https://github.com/commitizen-tools/commitizen.git
+
+      - name: "📄 Generate changelog"
+        id: generate-changelog
+        run: |
+          # Генерируем changelog на основе коммитов
+          cz changelog --incremental --unreleased-version "Unreleased"
+          
+          # Проверяем, есть ли изменения в changelog
+          if git diff --exit-code CHANGELOG.md; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "🟢 No changes in changelog"
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "🔴 Changes detected in changelog"
+          
+            # Коммитим обновленный changelog
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            git add CHANGELOG.md
+            git commit -m "chore(changelog): auto-update changelog [skip ci]"
+            git push
+          fi
+
   lint:
     runs-on: ubuntu-latest
     steps:
