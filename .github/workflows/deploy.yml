@@ -61,7 +61,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
           cd ${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}
-          docker compose exec bot ruff check .
+          docker compose exec bot uv run ruff check --config ./pyproject.toml --fix
           EOF
 
   run:
