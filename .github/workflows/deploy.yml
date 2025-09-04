@@ -17,6 +17,9 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
+      - name: 🔍 Debug SSH
+        run: ssh -vvv -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "whoami && ls -ld /var/www"
+
       - name: 📦 Copy files to VPS
         run: |
           rsync -avz --delete \
