@@ -31,14 +31,25 @@ dependencies = [
 ]
 
 [tool.commitizen]
-name = "cz_customize"
+# стандартный адаптер
+name = "cz_conventional_commits"
 version = "0.0.0"
 changelog_file = "CHANGELOG.md"
+changelog_incremental = true
 
+# включаем кастомизацию changelog
 [tool.commitizen.customize]
-message_template = """- {{message}}
-{% if message.body %}    {{message.body}}{% endif %}"""
-change_type_order = ["feat", "fix", "refactor", "chore"]
+# порядок группировки типов коммитов
+change_type_order = ["feat", "fix", "refactor", "chore", "docs", "style", "test"]
+
+# как формируется заголовок релиза
+changelog_title = "## {{ version }} ({{ date | strftime('%Y-%m-%d') }})"
+
+# как формируется строка коммита в changelog
+message_template = """- {{ commit.subject }}
+{% if commit.body %}    {{ commit.body }}{% endif %}"""
+
+dedup_by_commit_message = true
 
 [tool.ruff]
 target-version = "py312"
