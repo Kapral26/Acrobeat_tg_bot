@@ -11,6 +11,9 @@
 - feat(github-actions): workflows
 - - Добавил форматирования для changelog pyproject.toml
 - chore(changelog): auto-update changelog [skip ci]
+- feat(github-actions): workflows
+- - Добавил форматирования для changelog pyproject.toml
+- chore(changelog): auto-update changelog [skip ci]
 - fix(github-actions): workflows
 - - добавил блок в pyproject.toml
 - Внес правки в workflow
