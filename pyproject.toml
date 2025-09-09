@@ -33,21 +33,33 @@ dependencies = [
 [tool.commitizen]
 name = "cz_customize"
 version = "0.0.0"
+tag_format = ""
 changelog_file = "CHANGELOG.md"
 changelog_incremental = true
 
 [tool.commitizen.customize]
-change_type_order = ["feat", "fix", "refactor", "chore", "docs", "style", "test", "revert"]
+change_type_order = ["feat", "fix", "refactor", "docs", "test", "chore", "revert"]
 
-# Заголовок для каждой версии
+# Заголовок версии
 changelog_title = "## {{ version | default('Unreleased') }} ({{ date | strftime('%Y-%m-%d') }})"
 
-
+# Шаблон вывода
 message_template = """* {{ commit.type }}{% if commit.scope %}({{ commit.scope }}){% endif %}: {{ commit.subject }}
 {% if commit.body %}  {{ commit.body | replace("\n", "\n  ") }}{% endif %}"""
 
-# Чтобы не было дублей
+# Убираем дубли
 dedup_by_commit_message = true
+
+# Фильтрация мусора
+[tool.commitizen.customize.bump_pattern]
+# не включать такие коммиты в changelog
+exclude = [
+  '^Merge pull request',
+  '^Merge branch',
+  '^Update ',
+  '^chore\(changelog\):',
+]
+
 
 
 [tool.ruff]
