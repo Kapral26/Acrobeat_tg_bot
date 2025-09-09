@@ -31,21 +31,23 @@ dependencies = [
 ]
 
 [tool.commitizen]
-name = "cz_customize"               # 👈 вместо cz_conventional_commits
+name = "cz_customize"
 version = "0.0.0"
 changelog_file = "CHANGELOG.md"
 changelog_incremental = true
 
 [tool.commitizen.customize]
-# порядок группировки
-change_type_order = ["feat", "fix", "refactor", "chore", "docs", "style", "test"]
+change_type_order = ["feat", "fix", "refactor", "chore", "docs", "style", "test", "revert"]
 
-# шаблон заголовка блока changelog
+# Заголовок для каждой версии
 changelog_title = "## {{ version | default('Unreleased') }} ({{ date | strftime('%Y-%m-%d') }})"
 
-# шаблон строки коммита
-message_template = """- {{ commit.subject }}
-{% if commit.body %}    {{ commit.body }}{% endif %}"""
+
+message_template = """* {{ commit.type }}{% if commit.scope %}({{ commit.scope }}){% endif %}: {{ commit.subject }}
+{% if commit.body %}  {{ commit.body | replace("\n", "\n  ") }}{% endif %}"""
+
+# Чтобы не было дублей
+dedup_by_commit_message = true
 
 
 [tool.ruff]
