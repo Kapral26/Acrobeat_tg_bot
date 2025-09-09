@@ -4,60 +4,218 @@
 
 ## Unreleased (2025-09-09)
 
-### Feat
 
-- **github-actions**: workflows
-- **github-actions**: workflows
-- **github-actions**: add
-- **test**: Добавление тестов
-- **docker**: Обернул проект в Dockerfile
-- **readme**: Написал документацию
-- **database**: add migrations
-- **track_repository**: add new logic
-- **logger**: add filter
-- **download_repo**: Добавил новый репозиторий
-- **msg_cleaner**: Очистка сообщений Ввода имени трека
-- **cache**: state -> redis
-- **track-request**: Новый функционал
-- **track_storage**: base structure
-- **track_request**: base structure
-- **track_storage**: database structure
-
-### Fix
-
-- **github-actions**: workflows
-- **github-actions**: ruff
-- **github-actions**: ruff
-- **github-actions**: ruff
-- **github-actions**: workflows
-- **domains**: users
-- **github-actions**: workflows
-- **migrations**: not added into repo
-- **github-actions**: workflows
-- **github-actions**: workflows
-- **github-actions**: workflows
-- **github-actions**: workflows
-- **github-actions**: workflows
-- **migrations**: Пересоздал миграции
-- **method parametrs**: Исправил проблему
-- **cache**: Проблема со сбросом текстового запроса поиска
-- **start_message**: Изменил поаедение
-- **downloader-service**: youtube
-- **start command**: Кнопка: "История поиска"
-- **cache**: clipper_delete_message
-- **track**: Переработал логику
-
-### Refactor
-
-- **ruff**: указания линтера
-- **github-actions**: workflows
-- **pyproject.toml**: Внес правки
-- **track_cliper**: ux\ui
-- **track_name**: ux\ui
-- **keyboards**: pagination_keyboards
-- **track_request**: ux\ui
-- **start**: ux\ui
-- **message_pagination**: additional
-- **changelog**: Актуализация
-- **msg_cleaner**: Вынес очистку истории сообщений в отдельный сервис
-- **core**: dependencies
+- feat(github-actions): workflows
+- - Добавил форматирования для changelog pyproject.toml
+- chore(changelog): auto-update changelog [skip ci]
+- feat(github-actions): workflows
+- - Добавил форматирования для changelog pyproject.toml
+- chore(changelog): auto-update changelog [skip ci]
+- fix(github-actions): workflows
+- - добавил блок в pyproject.toml
+- Внес правки в workflow
+- feat(github-actions): workflows
+- - Добавил этап формирования changelog
+- Вручную актуализировал changelog.md
+- fix(github-actions): ruff
+- Добавил этап наката миграций
+- fix(github-actions): ruff
+- Из туториала взял запуск задачи для actions
+- fix(github-actions): ruff
+- Внес правки в запуск линтера на этапе проверки
+- refactor(ruff): указания линтера
+- Подготовил проект по линтеру
+- fix(github-actions): workflows
+- Вырезал тесты
+- fix(domains): users
+- Исправил проблему неиспользуемого кода
+- revert(test): Вырезал корявые тесты
+- Да, используя гпт - собрал тестя для проекта, но это была ошибка. Тесты надо писать вручную
+- revert(test): Вырезал корявые тесты
+- Да, используя гпт - собрал тестя для проекта, но это была ошибка. Тесты надо писать вручную
+- fix(github-actions): workflows
+- Убарл этапы, использовавшиеся для дебага
+- fix(migrations): not added into repo
+- Добавил миграции в репощиторий, не знаю, почему раньше этого не сделал
+- fix(github-actions): workflows
+- Мелкие исправления, ну и исправление собственной глупости
+- fix(github-actions): workflows
+- Мелкие исправления
+- fix(github-actions): workflows
+- Мелкие исправления
+- fix(github-actions): workflows
+- Вынес в деплой поднятие контейнеров
+- fix(github-actions): workflows
+- исправил путь хранения проекта
+- refactor(github-actions): workflows
+- Разделил на разные задачи, билд, тест, линтер и запуск
+- Update deploy.yml
+- Update deploy.yml
+- Update deploy.yml
+- Update deploy.yml
+- feat(github-actions): add
+- Добавил workflows, pre-commit
+- feat(test): Добавление тестов
+- Добавил базовые тесты
+- refactor(pyproject.toml): Внес правки
+- feat(docker): Обернул проект в Dockerfile
+- Добавил .dockerignore
+Обернул бота в Dockerfile
+Добавил контейнер в docker-compose.yml
+- fix(migrations): Пересоздал миграции
+- Пересоздал миграции для корректного старта проекта
+- feat(readme): Написал документацию
+- Расписал readme.md
+- Merge pull request #10
+- future/docstrings
+- fix(method parametrs): Исправил проблему
+- Исправио проблему с kwargs некоторых методов
+- feat(database): add migrations
+- Добавил ревизии БД
+- docs(domains): track_cliper
+- Добавил докстринги
+- docs(domains): track_name
+- Добавил докстринги
+- docs(domains): track_request
+- Добавил докстринги
+- docs(domains): track_search
+- Добавил докстринги
+- docs(domains): track
+- Добавил докстринги
+- docs(domains): start
+- Добавил докстринги
+- docs(domains): users
+- Добавил докстринги
+- docs(middleware): Добавил докстринги
+- docs(part-1): Добавил докстринги
+- - service
+- bot.py
+- main.py
+- Часть domen
+- fix(cache): Проблема со сбросом текстового запроса поиска
+- Проблема со сбросом текстового запроса поиска, исправил
+- Merge pull request #9
+- future/chance_ux
+- refactor(track_cliper): ux\ui
+- Переименовал кнопки, изменил сообщения.
+Переиспользовал кнопки
+- refactor(track_name): ux\ui
+- Переименовал кнопки, изменил сообщения.
+Переиспользовал кнопки
+- refactor(keyboards): pagination_keyboards
+- Вынес логику для клавиатур с пашинацией в отдельный модуль для поддержки логики DRY
+- fix(start_message): Изменил поаедение
+- Если есть возможность при возвращении из меню, сообщение будет изменено, а не отправлено по новой
+- refactor(track_request): ux\ui
+- Исправил текст сообщения и кнопок
+- refactor(start): ux\ui
+- Исправил текст сообщения и кнопок
+- Merge pull request #8
+- future/skip_repo
+- feat(track_repository): add new logic
+- Добавил логику пропуска репозитория если поисковой запрос не выдал необходимых результатов
+- refactor(message_pagination): additional
+- вынес логику пагиначии в сообщениях в отдельный модуль
+- fix(downloader-service): youtube
+- Исправил проблему с поиском и скачиванием треков из YT
+- feat(logger): add filter
+- Добавил фильтр на сообщения логгера
+- fix(start command): Кнопка: "История поиска"
+- Исправил текст кнопки
+- refactor(changelog): Актуализация
+- Актуализировал changelog.md
+- Merge pull request #7
+- feat(download_repo): Добавил новый репозиторий
+- feat(download_repo): Добавил новый репозиторий
+- Добавил новый репозиторий Hitmo для скачивания треков
+- Merge pull request #6
+- future/add_cliper_periods
+- feat(msg_cleaner): Очистка сообщений Ввода имени трека
+- Для домена track_name - добавил очистку истории чата.
+- refactor(msg_cleaner): Вынес очистку истории сообщений в отдельный сервис
+- Вынес очистку сообщений в отдельный сервис с хранением в Redis и возможностью переиспользовать
+- fix(cache): clipper_delete_message
+- исправил expire до 1 минуты
+- feat(cache): state -> redis
+- Все сохранения в рамках сессии перенес в redis
+- Merge pull request #5
+- future/add_track_request_history
+- feat(track-request): Новый функционал
+- - Реализовал функционал сохранения поисковых пользователя.
+- Теперь есть возможность использования ранее введенных поисковых запросов.
+- fix(track): Переработал логику
+- Решил отложить реализацию хранение истории скачиваний пользователя т.к. на текущий момент это оверхед.
+- Решил оставить только хранение истории поиска пользователем.
+- feat(track_storage): base structure
+- Реаоизовал:
+- Модели
+- Сервис
+- Репозиторий
+- Схемы
+- Для хранения данных о скачаном треке.
+Но пока в логику не внедрил
+- feat(track_request): base structure
+- Реаоизовал:
+- Модели
+- Сервис
+- Репозиторий
+- Схемы
+- Для хранения данных о поиске треков.
+Но пока в логику не внедрил
+- refactor(core): dependencies
+- Разнес dependencies по доменам
+- feat(track_storage): database structure
+- Добавил модели и миграцию для хранение данных по скачанным и обрезанным трекам
+- Добавил Changelog
+- Добавил миграции и alembic
+- Merge pull request #4
+- future/processing_audio_message
+- Реализовал скачивание файла с указанием имени трека по прямой ссылке с YT и по прямой загрузке файла.
+- Исправил адресацию callback_data
+- Начал реализовывать обработку отправленного аудио файла
+- Добавил сортировку для track_part
+- по фиксил багу связанную с изменением имени трека перед подтверждением
+- Добавил к обрезанному треку fadeout
+- Merge pull request #3
+- future/log_to_user_branch
+- Внедрил глобальный логер и исправил пару помарок
+- Merge branch 'main' into future/log_to_user_branch
+- Merge pull request #2
+- future/save_user_and_history
+- Добавил user_caсhe_repository
+- Для Получения списка ранее введенных данных
+- Реализовал хранение и отображение списка введенных ФИО с пагинацией
+- Update bot.py
+- Добавил инициализацию глобального логгера
+- Create logger_setup.py
+- Инициализация глобального логгера
+- Create config.yaml
+- Параметры логгера
+- Начал добавлять логику хранения введенных данных пользователем.
+- Надо добавить логику сохранения в бД данных.
+- Добавил возможность прервать выполнение с момента поиска трека
+- Перед поиском песни, собираются данные для сбора наименования трека
+- При запуске бота, сохраняю пользователя.
+- Merge pull request #1
+- add_new_download_repo
+- Для отправки загрузчика переделал отправку.
+- добавил кнопку для полученного трека для повторного поиска
+- Пофиксил багу для репо YT
+- ## Доработки - Добавил еще один источник для поиска и скачивания треков - Переделал сервис, для поочередного поиска и скачивания треков - Добавил абстракцию над репозиториями downloader - Для каждого репозитория добавил приоритет - Для ограничения длины ссылки в байтах внедрил Redis
+- Начал добавлять еще один сайт для скачивания треков.
+- Реализовал репозиторий и поиск в двух репозиториях
+- Надо еще реализовать скачивания в том репозитории, который использовался для поиска
+- Привел в порядок базовые хендлеры.
+- Все через контейнеры подключено.
+На каждое действие пользователю отображается сообщение.
+Работает поиск и работает скачивание по прямой ссылке.
+- Реализовал базу: Скачивание по прямой ссылке YouTube, по итогу поиска и выборки по клавиатуре
+- Добавил функционал обрезки песни и добавил beep
+- Закончил реализацию поиска трека и его скачивания.
+- Это базовый функционал, еще надо будет отрефакторить.
+Добавиьт обрезку трека и хранение в S3
+- Реализовал интерфейс команды старт. Реализовал поиск треков по YT Сейчас по запросы выводится 5 треков со ссылками на YT, после переделаю на скачивание этого трека и обрезка
+- Реализовал базовый функционал скачивания mp3 из YT
+- Реализовал базовый функционал скачивания mp3 из YT
+- Init commit
+- Initial commit
