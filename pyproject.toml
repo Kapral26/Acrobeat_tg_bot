@@ -1,6 +1,6 @@
 [project]
 name = "acrobeat-tg-bot"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Асинхронный Telegram-бот для работы с музыкой, пользователями и треками. Использует PostgreSQL, Redis, Alembic, DI (dishka), uv и Docker."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -30,26 +30,54 @@ dependencies = [
     "yt-dlp>=2025.8.11",
 ]
 
-[tool.commitizen]
-# стандартный адаптер
-name = "cz_conventional_commits"
-version = "0.0.0"
+[tool.semantic_release]
+# Откуда брать текущую версию
+version_toml = "pyproject.toml:tool.semantic_release.version"
+# Парсер коммитов (angular для conventional commits)
+commit_parser = "angular"
+# Файл для changelog
 changelog_file = "CHANGELOG.md"
-changelog_incremental = true
+# Отключаем сборку и публикацию
+build_command = "echo 'No build needed'"
+upload_to = "none"
+# Текущая версия (аналог version из commitizen)
+version = "0.0.0"
 
-# включаем кастомизацию changelog
-[tool.commitizen.customize]
-# порядок группировки типов коммитов
-change_type_order = ["feat", "fix", "refactor", "chore", "docs", "style", "test"]
+# Настройка генерации changelog
+[tool.semantic_release.changelog]
+# Сохраняем историю (incremental)
+incremental = true
 
-# как формируется заголовок релиза
-changelog_title = "## {{ version }} ({{ date | strftime('%Y-%m-%d') }})"
+# Группировка коммитов по типам (аналог change_type_order)
+[tool.semantic_release.changelog.sections]
+features = ["feat"]
+fixes = ["fix"]
+refactor = ["refactor"]
+chore = ["chore"]
+documentation = ["docs"]
+style = ["style"]
+tests = ["test"]
 
-# как формируется строка коммита в changelog
-message_template = """- {{ commit.subject }}
-{% if commit.body %}    {{ commit.body }}{% endif %}"""
+# Пользовательский шаблон для заголовка версии
+[tool.semantic_release.changelog.template]
+# Заголовок версии (аналог changelog_title)
+version_template = "## {{ version }} ({{ date | strftime('%Y-%m-%d') }})\n"
+# Шаблон для коммита (аналог message_template)
+commit_template = "- {{ message }}\n{% if body %}  {{ body | indent(2) }}\n{% endif %}"
 
-dedup_by_commit_message = true
+# Можно настроить отдельные шаблоны для каждой секции
+[tool.semantic_release.changelog.template.sections]
+features = "### Новые возможности\n"
+fixes = "### Исправления\n"
+refactor = "### Рефакторинг\n"
+chore = "### Служебные изменения\n"
+documentation = "### Документация\n"
+style = "### Стиль кода\n"
+tests = "### Тесты\n"
+
+# Исключаем коммиты, которые не должны попадать в changelog
+[tool.semantic_release.changelog.exclude]
+commit_types = ["ci", "build"]  # CI и сборку не включаем в changelog
 
 [tool.ruff]
 target-version = "py312"

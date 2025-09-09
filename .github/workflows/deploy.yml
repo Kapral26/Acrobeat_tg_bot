@@ -6,7 +6,7 @@ on:
 
 jobs:
   changelog:
-    name: "📝 Generate Changelog"
+    name: "🚀 Semantic Release (Version & Changelog)"
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -15,7 +15,7 @@ jobs:
       - name: "📦 Checkout code"
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Важно: semantic-release нужна полная история коммитов
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "🐍 Setup Python"
@@ -23,25 +23,36 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: "📋 Install commitizen"
-        run: pip install commitizen
+      - name: "📋 Install semantic-release"
+        run: pip install semantic-release
 
-      - name: "📄 Generate changelog"
+      - name: "🚀 Run Semantic Release (Dry-run first)"
         run: |
-          cz changelog --incremental --unreleased-version "Unreleased"
-
-          if git diff --quiet CHANGELOG.md; then
-            echo "🟢 No changes in changelog"
+          # Сначала проверяем, будет ли релиз
+          if semantic-release version --dry-run; then
+            echo "🔴 New release will be created"
+            # Запускаем реальный релиз
+            semantic-release version --noop  # Только версия и changelog, без push
+            semantic-release changelog --unreleased-only
           else
-            echo "🔴 Changes detected in changelog"
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add CHANGELOG.md
-            git commit -m "chore(changelog): auto-update changelog [skip ci]"
-            git push
+            echo "🟢 No new release needed"
+            exit 0
           fi
 
-
+      - name: "📄 Commit and push changes"
+        if: success()
+        run: |
+          # Проверяем, есть ли изменения в pyproject.toml или CHANGELOG.md
+          if git diff --quiet pyproject.toml CHANGELOG.md; then
+            echo "🟢 No changes detected"
+          else
+            echo "🔴 Changes detected - committing"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add pyproject.toml CHANGELOG.md
+            git commit -m "chore(release): auto-update version and changelog [skip ci]"
+            git push
+          fi
   lint:
     runs-on: ubuntu-latest
     steps:
