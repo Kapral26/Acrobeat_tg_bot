@@ -7,6 +7,7 @@
 ### Feat
 
 - **github-actions**: workflows
+- **github-actions**: workflows
 - **github-actions**: add
 - **test**: Добавление тестов
 - **docker**: Обернул проект в Dockerfile
