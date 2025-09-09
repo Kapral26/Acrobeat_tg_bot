@@ -120,9 +120,10 @@ jobs:
           docker compose run --rm --entrypoint="uv run alembic upgrade head" bot
           EOF
 
-      - name: "🎯 Start all services"
+      - name: "🎯 Rebuild and start bot"
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
           cd ${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}
-          docker compose up -d
+          docker compose build --no-cache bot
+          docker compose up -d bot
           EOF
