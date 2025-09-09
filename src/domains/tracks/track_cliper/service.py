@@ -57,7 +57,7 @@ class TrackCliperService:
         try:
             spinner_msg = """
             ✂️✏️ Подрезаю трек…{spinner_item}\n🔔 Добавляю сигнал в начало…\n🎶
-            Делаю мягкий фейд-аут на конце…
+            Смягчаю концовку песни…
             """
             track_with_beep = await processing_msg(
                 self._get_prepared_track,

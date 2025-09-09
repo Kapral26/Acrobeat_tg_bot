@@ -20,7 +20,7 @@ async def bt_prompt_track_name() -> InlineKeyboardButton:
     :return: Объект `InlineKeyboardButton`.
     """
     return InlineKeyboardButton(
-        text="✏️ Добавить новое",
+        text="✏️ Другой спортсмен",
         callback_data="hand_input_track_part",
     )
 
