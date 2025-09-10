@@ -93,7 +93,8 @@ jobs:
 
       - name: "📝 Generate .env file on server"
         run: |
-          ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+          ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
+          mkdir -p $DEPLOY_DIR/${{ github.event.repository.name }}
           cat <<EOT > $DEPLOY_DIR/${{ github.event.repository.name }}/.env
           POSTGRES_USER=${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
