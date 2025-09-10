@@ -72,6 +72,8 @@ jobs:
     name: "🚀 Deploy to Server"
     runs-on: ubuntu-latest
     needs: lint
+    env:
+      DEPLOY_DIR: /home/${{ secrets.VPS_USER }}/apps
     steps:
       - name: "🧾 Checkout code"
         uses: actions/checkout@v4
@@ -84,15 +86,15 @@ jobs:
       - name: "📦 Copy files to VPS"
         run: |
           ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
-            "mkdir -p ${{ secrets.DEPLOY_DIR }}"
+            "mkdir -p $DEPLOY_DIR"
           rsync -avz --delete \
-            -e "ssh -p 2233 -o StrictHostKeyChecking=no" \
-            ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}
+            -e "ssh -p 2233 -o StrictHostKeyChecking=no -p 2233" \
+            ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:$DEPLOY_DIR/${{ github.event.repository.name }}
 
       - name: "📝 Generate .env file on server"
         run: |
           ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-          cat <<EOT > ${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}/.env
+          cat <<EOT > $DEPLOY_DIR/${{ github.event.repository.name }}/.env
           POSTGRES_USER=${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB=${{ secrets.POSTGRES_DB }}
@@ -109,7 +111,7 @@ jobs:
       - name: "🚀 Start database for migrations"
         run: |
           ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-          cd ${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}
+          cd $DEPLOY_DIR/${{ github.event.repository.name }}
           docker compose down
           docker compose up -d --build database
           EOF
@@ -117,7 +119,7 @@ jobs:
       - name: "🛠️ Run migrations"
         run: |
           ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-          cd ${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}
+          cd $DEPLOY_DIR/${{ github.event.repository.name }}
           echo "📁 Running Alembic migrations"
           docker compose run --rm --entrypoint="uv run alembic upgrade head" bot
           EOF
@@ -125,7 +127,7 @@ jobs:
       - name: "🎯 Rebuild and start bot"
         run: |
           ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-          cd ${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}
+          cd $DEPLOY_DIR/${{ github.event.repository.name }}
           docker compose build --no-cache bot
           docker compose up -d bot
           EOF
