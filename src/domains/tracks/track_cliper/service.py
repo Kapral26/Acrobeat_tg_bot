@@ -17,7 +17,7 @@ from aiogram import Bot
 from src.domains.common.message_processing import processing_msg
 from src.domains.tracks.track_cliper.schemas import ClipPeriodSchema
 from src.service.cliper.repository import TrackCliperRepo
-from src.service.cliper.schemas import AudioClipConfig
+from src.service.cliper.schemas import ClipRequestSchema
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +95,7 @@ class TrackCliperService:
         """
         cut_track = await self.cliper_repo.cut_audio_fragment(
             full_track_path=full_track_path,
-            config=AudioClipConfig(
+            config=ClipRequestSchema(
             start_sec=clip_period.start_sec,
             finish_sec=clip_period.finish_sec,
         ),

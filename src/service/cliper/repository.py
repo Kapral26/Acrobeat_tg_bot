@@ -16,8 +16,7 @@ from typing import Any
 
 from pydub import AudioSegment
 
-from src.service.cliper.schemas import AudioClipConfig, \
-    FadeConfig
+from src.service.cliper.schemas import ClipRequestSchema, FadeConfig
 
 # Настройка логирования
 logger = logging.getLogger(__name__)
@@ -63,7 +62,7 @@ class TrackCliperRepo:
     async def cut_audio_fragment(
         self,
         full_track_path: Path,
-        config: AudioClipConfig,
+        config: ClipRequestSchema,
     ) -> Path:
         """
         Вырезает фрагмент из аудиофайла.

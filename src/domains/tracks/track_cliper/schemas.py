@@ -84,5 +84,10 @@ class ClipPeriodSchema(BaseModel):
 
     @staticmethod
     def time_marker_to_seconds(time_marker: str) -> int:
+        """
+        Преобразует временную метку из формата `mm:ss` в миллисекунды.
+        :param time_marker: Временная метка в формате `mm:ss`.
+        :return: Временная метка в миллисекундах.
+        """
         minutes, second = (int(x) for x in time_marker.split(":"))
         return (minutes * 60 + second) * 1000

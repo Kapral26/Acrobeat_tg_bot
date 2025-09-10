@@ -1,7 +1,6 @@
-from pydantic import BaseModel, \
-    Field, \
-    field_validator, \
-    model_validator
+"""Схемы для валидации данных, связанных с вырезанием фрагментов аудио."""
+
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class AudioMetadata(BaseModel):
@@ -12,8 +11,8 @@ class AudioMetadata(BaseModel):
     sample_rate: int | None = Field(None, description="Частота дискретизации")
 
 
-class AudioClipConfig(BaseModel):
-    """Конфигурация для вырезки аудиофрагмента."""
+class ClipRequestSchema(BaseModel):
+    """Схема для запроса на вырезание фрагмента видео."""
 
     start_sec: float = Field(
         ...,
@@ -30,6 +29,13 @@ class AudioClipConfig(BaseModel):
     @field_validator("output_format")
     @classmethod
     def validate_format(cls, v: str) -> str:
+        """
+        Валидирует формат выходного файла.
+        Поддерживаемые форматы: mp3, wav, flac, ogg.
+        :param v: Переданный параметр output_format.
+        :return: Переданный параметр output_format.
+        :raises ValueError: Если формат не поддерживается.
+        """
         allowed = {"mp3", "wav", "flac", "ogg"}
         if v not in allowed:
             msg = f"Unsupported format: {v}. Allowed: {', '.join(allowed)}"
@@ -38,7 +44,13 @@ class AudioClipConfig(BaseModel):
 
     @model_validator(mode="after")
     @classmethod
-    def validate_time_difference(cls, values) -> str:
+    def validate_time_difference(cls, values: "ClipRequestSchema") -> "ClipRequestSchema":
+        """
+        Проверяет, что разница между finish_sec и start_sec не меньше 10 секунд.
+        :param values: Параметры схемы
+        :return: Параметры схемы
+        :raises ValueError: Если разница менее 10 секунд
+        """
         start = values.start_sec
         finish = values.finish_sec
 
