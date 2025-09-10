@@ -4,7 +4,6 @@ requires-python = ">=3.12"
 
 [[package]]
 name = "acrobeat-tg-bot"
-version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "aiobotocore" },
