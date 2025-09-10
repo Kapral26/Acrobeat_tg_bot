@@ -111,7 +111,7 @@ jobs:
 
       - name: "🚀 Start database for migrations"
         run: |
-          ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+          ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
           cd $DEPLOY_DIR/${{ github.event.repository.name }}
           docker compose down
           docker compose up -d --build database
@@ -119,7 +119,7 @@ jobs:
 
       - name: "🛠️ Run migrations"
         run: |
-          ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+          ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
           cd $DEPLOY_DIR/${{ github.event.repository.name }}
           echo "📁 Running Alembic migrations"
           docker compose run --rm --entrypoint="uv run alembic upgrade head" bot
@@ -127,7 +127,7 @@ jobs:
 
       - name: "🎯 Rebuild and start bot"
         run: |
-          ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+          ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
           cd $DEPLOY_DIR/${{ github.event.repository.name }}
           docker compose build --no-cache bot
           docker compose up -d bot
