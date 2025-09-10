@@ -1,87 +1,131 @@
 """
-Модуль `repository.py` содержит реализацию репозитория
- для обработки аудиофайлов, таких, как вырезка фрагментов и конкатенация треков.
+Модуль для работы с аудиофайлами: вырезка фрагментов и конкатенация треков.
 
-Использует библиотеку `ffmpeg` для выполнения операций с аудио.
+Использует библиотеку `pydub` для выполнения операций с аудио.
+Реализует паттерн Репозиторий для инкапсуляции логики работы с аудио.
 """
 
 import asyncio
+import contextlib
+import logging
+import os
 import tempfile
-from dataclasses import dataclass
+from collections.abc import Generator
 from pathlib import Path
+from typing import Any
 
-import ffmpeg
+from pydub import AudioSegment
+
+from src.service.cliper.schemas import AudioClipConfig, \
+    FadeConfig
+
+# Настройка логирования
+logger = logging.getLogger(__name__)
 
 
-@dataclass
-class TrackCliperRepo:
-    """
-    Класс-репозиторий для обработки аудиофайлов.
+class AudioProcessingError(Exception):
+    """Базовое исключение для ошибок обработки аудио."""
 
-    Обеспечивает функциональность по:
-    - вырезке фрагмента аудио;
-    - объединению двух аудиофайлов (например, звука и музыки);
-    - добавлению эффекта затухания на конце музыки;
-    """
 
-    beep_path: Path = Path(__file__).parent / "beep.mp3"
-    # Путь к файлу со звуком, который будет добавляться в начале.
+class TemporaryFileManager:
+    """Менеджер для работы с временными файлами."""
 
     @staticmethod
+    @contextlib.contextmanager
+    def create_temp_file(suffix: str = ".mp3") -> Generator[Path, Any, None]:
+        """Контекстный менеджер для создания временного файла."""
+        fd, temp_path = tempfile.mkstemp(suffix=suffix)
+        try:
+            os.close(fd)
+            yield Path(temp_path)
+        finally:
+            pass
+
+
+class TrackCliperRepo:
+    """
+    Репозиторий для обработки аудиофайлов.
+
+    Реализует:
+    - вырезку фрагментов аудио
+    - объединение аудиофайлов с эффектами
+    """
+
+    def __init__(self, beep_path: Path | None = None):
+        self.beep_path = beep_path or Path(__file__).parent / "beep.mp3"
+        self._validate_beep_file()
+
+    def _validate_beep_file(self) -> None:
+        """Проверка существования beep файла."""
+        if not self.beep_path.exists():
+            logger.warning(f"Beep file not found at {self.beep_path}")
+
     async def cut_audio_fragment(
-        full_tack_path: Path,
-        start_sec: float,
-        duration_sec: float,
+        self,
+        full_track_path: Path,
+        config: AudioClipConfig,
     ) -> Path:
         """
         Вырезает фрагмент из аудиофайла.
 
-        :param full_tack_path: Путь к исходному аудиофайлу.
-        :param start_sec: Время начала фрагмента в секундах.
-        :param duration_sec: Длительность фрагмента в секундах.
-        :return: Путь к новому аудиофайлу с вырезанным фрагментом.
+        :param full_track_path: Путь к исходному аудиофайлу
+        :param config: Конфигурация вырезки фрагмента
+        :return: Путь к новому аудиофайлу
         """
-        output_path = Path(tempfile.mkstemp(suffix=".mp3")[1])
+        self._validate_input_file(full_track_path)
 
-        def _cut() -> None:
-            (
-                ffmpeg.input(full_tack_path.as_posix(), ss=start_sec, t=duration_sec)
-                .output(output_path.as_posix(), format="mp3", acodec="libmp3lame")
-                .overwrite_output()
-                .run(quiet=False, capture_stdout=True, capture_stderr=True)
-            )
+        with TemporaryFileManager.create_temp_file(suffix=f".{config.output_format}") as output_path:
 
-        await asyncio.to_thread(_cut)
-        return output_path
+            def _cut() -> None:
+                logger.debug(f"Cutting from {config.start_sec} to {config.finish_sec}")
+                audio = AudioSegment.from_file(full_track_path)
+                fragment = audio[config.start_sec:config.finish_sec]
+                fragment.export(output_path, format=config.output_format)
 
-    async def concat_mp3(self, music_path: Path) -> Path:
+            await asyncio.to_thread(_cut)
+            logger.info(f"Successfully cut audio fragment: {output_path}")
+            return output_path
+
+    async def concat_mp3(
+        self,
+        music_path: Path,
+        fade_config: FadeConfig | None = None,
+    ) -> Path:
         """
-        Объединяет два аудиофайла: звуковой сигнал (beep) и музыку.
+        Объединяет аудиофайлы с добавлением эффекта затухания.
 
-        На музыке перед объединением добавляется эффект затухания.
-
-        :param music_path: Путь к аудиофайлу с музыкой.
-        :return: Путь к объединённому аудиофайлу.
+        :param music_path: Путь к аудиофайлу с музыкой
+        :param fade_config: Конфигурация затухания
+        :return: Путь к объединённому аудиофайлу
         """
-        output_path = Path(tempfile.mkstemp(suffix=".mp3")[1])
+        fade_config = fade_config or FadeConfig()
+        self._validate_input_file(music_path)
+        self._validate_input_file(self.beep_path)
 
-        def _concat() -> None:
-            # Сначала узнаём длительность второго трека
-            probe = ffmpeg.probe(str(music_path))
-            duration = float(probe["format"]["duration"])
+        with TemporaryFileManager.create_temp_file(suffix=".mp3") as output_path:
 
-            fade_duration = 2
-            fade_start = max(0, int(duration - fade_duration))
+            def _concat() -> None:
+                beep = AudioSegment.from_file(self.beep_path)
+                music = AudioSegment.from_file(music_path)
 
-            # Входы: beep и основной трек
-            beep_input = ffmpeg.input(str(self.beep_path))
-            music_input = ffmpeg.input(str(music_path))
+                if fade_config.fade_type == "out":
+                    music = music.fade_out(int(fade_config.fade_duration * 1000))
+                elif fade_config.fade_type == "in":
+                    music = music.fade_in(int(fade_config.fade_duration * 1000))
 
-            # Конкатенация через фильтры
-            joined = ffmpeg.concat(beep_input, music_input, v=0, a=1)
-            faded = joined.filter("afade", t="out", st=fade_start, d=fade_duration)
+                combined = beep + music
+                combined.export(output_path, format="mp3")
 
-            (faded.output(str(output_path), acodec="libmp3lame").overwrite_output().run(quiet=True))
+            await asyncio.to_thread(_concat)
+            logger.info(f"Successfully concatenated audio files: {output_path}")
+            return output_path
 
-        await asyncio.to_thread(_concat)
-        return output_path
+    @staticmethod
+    def _validate_input_file(file_path: Path) -> None:
+        """Валидация входного файла."""
+        if not file_path.exists():
+            msg = f"Input file does not exist: {file_path}"
+            raise AudioProcessingError(msg)
+        if not file_path.is_file():
+            msg = f"Input path is not a file: {file_path}"
+            raise AudioProcessingError(msg)

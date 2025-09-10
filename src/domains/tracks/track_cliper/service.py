@@ -17,6 +17,7 @@ from aiogram import Bot
 from src.domains.common.message_processing import processing_msg
 from src.domains.tracks.track_cliper.schemas import ClipPeriodSchema
 from src.service.cliper.repository import TrackCliperRepo
+from src.service.cliper.schemas import AudioClipConfig
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +78,7 @@ class TrackCliperService:
 
     async def _get_prepared_track(
         self,
-        full_tack_path: Path,
+        full_track_path: Path,
         clip_period: ClipPeriodSchema,
     ) -> Path:
         """
@@ -88,13 +89,15 @@ class TrackCliperService:
         2. Добавляет начальный сигнал (бип).
         3. Применяет фейд-аут в конце.
 
-        :param full_tack_path: Путь к исходному аудиофайлу.
+        :param full_track_path: Путь к исходному аудиофайлу.
         :param clip_period: Объект с временными параметрами (начало и длительность).
         :return: Путь к готовому обработанному файлу.
         """
         cut_track = await self.cliper_repo.cut_audio_fragment(
-            full_tack_path=full_tack_path,
+            full_track_path=full_track_path,
+            config=AudioClipConfig(
             start_sec=clip_period.start_sec,
-            duration_sec=clip_period.duration_sec,
+            finish_sec=clip_period.finish_sec,
+        ),
         )
         return await self.cliper_repo.concat_mp3(cut_track)

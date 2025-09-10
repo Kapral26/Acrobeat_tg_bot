@@ -58,13 +58,31 @@ class ClipPeriodSchema(BaseModel):
 
     @computed_field
     @property
-    def start_sec(self) -> float:
+    def start_sec(self) -> int:
         """
-        Преобразует временную метку `start` в десятичное число.
+        Преобразует временную метку `start` в секунды
 
         Формат преобразования: `mm:ss` → `m.m`, где `m` — минуты, `s` — секунды.
-        Например, `"01:30"` преобразуется в `1.3`.
+        Например, `"01:30"` преобразуется в `90`.
 
         :return: Число с плавающей точкой, представляющее начальное время.
         """
-        return float(".".join(self.start.split(":")))
+        return self.time_marker_to_seconds(self.start)
+
+    @computed_field
+    @property
+    def finish_sec(self) -> int:
+        """
+        Преобразует временную метку `finish` в секунды
+
+        Формат преобразования: `mm:ss` → `m.m`, где `m` — минуты, `s` — секунды.
+        Например, `"01:30"` преобразуется в `90`.
+
+        :return: Число с плавающей точкой, представляющее начальное время.
+        """
+        return self.time_marker_to_seconds(self.finish) + 2 * 1000
+
+    @staticmethod
+    def time_marker_to_seconds(time_marker: str) -> int:
+        minutes, second = (int(x) for x in time_marker.split(":"))
+        return (minutes * 60 + second) * 1000
