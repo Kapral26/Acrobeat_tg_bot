@@ -84,12 +84,12 @@ jobs:
       - name: "📦 Copy files to VPS"
         run: |
           rsync -avz --delete \
-            -e "ssh -o StrictHostKeyChecking=no" \
+            -e "ssh -p 2233 -o StrictHostKeyChecking=no" \
             ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}
 
       - name: "📝 Generate .env file on server"
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+          ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
           cat <<EOT > ${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}/.env
           POSTGRES_USER=${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
@@ -106,7 +106,7 @@ jobs:
 
       - name: "🚀 Start database for migrations"
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+          ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
           cd ${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}
           docker compose down
           docker compose up -d --build database
@@ -114,7 +114,7 @@ jobs:
 
       - name: "🛠️ Run migrations"
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+          ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
           cd ${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}
           echo "📁 Running Alembic migrations"
           docker compose run --rm --entrypoint="uv run alembic upgrade head" bot
@@ -122,7 +122,7 @@ jobs:
 
       - name: "🎯 Rebuild and start bot"
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+          ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
           cd ${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}
           docker compose build --no-cache bot
           docker compose up -d bot
