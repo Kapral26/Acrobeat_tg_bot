@@ -83,6 +83,8 @@ jobs:
 
       - name: "📦 Copy files to VPS"
         run: |
+          ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
+            "mkdir -p ${{ secrets.DEPLOY_DIR }}"
           rsync -avz --delete \
             -e "ssh -p 2233 -o StrictHostKeyChecking=no" \
             ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.DEPLOY_DIR }}/${{ github.event.repository.name }}
