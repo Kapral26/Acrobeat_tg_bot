@@ -47,6 +47,7 @@ class RedisSettings(BaseSettings):
     host: str = Field(validation_alias="REDIS_HOST")
     port: int = Field(validation_alias="REDIS_PORT")
     db: int = Field(validation_alias="REDIS_DB")
+    password: SecretStr = Field(validation_alias="REDIS_PASSWORD")
 
     class Config:
         """Настройки Pydantic для класса RedisSettings."""

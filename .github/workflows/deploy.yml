@@ -104,6 +104,7 @@ jobs:
           REDIS_HOST=${{ secrets.REDIS_HOST }}
           REDIS_PORT=6379
           REDIS_DB=0
+          REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
           BOT_TOKEN=${{ secrets.BOT_TOKEN }}
           DEBUG=${{ secrets.DEBUG }}
           EOT

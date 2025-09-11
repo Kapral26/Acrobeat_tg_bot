@@ -76,4 +76,5 @@ class RedisProvider(Provider):
             host=settings.redis.host,
             port=settings.redis.port,
             db=settings.redis.db,
+            password=settings.redis.password.get_secret_value(),
         )

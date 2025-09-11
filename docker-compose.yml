@@ -5,29 +5,33 @@ services:
     env_file:
       - .env
     environment:
-      PGDATA: ./pgdata
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"  # доступ только с хоста, не из интернета
     networks:
       - my_app_network
     volumes:
-      - ./pgdata:/var/lib/postgresql/data/pgdata
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres_user -d postgres_db" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}" ]
       interval: 30s
       timeout: 10s
       retries: 5
     restart: unless-stopped
-    tty: true
-    stdin_open: true
+    security_opt:
+      - no-new-privileges:true
+    user: "999:999"  # postgres в контейнере
 
   cache:
     image: redis:7.2.4-alpine
     container_name: redis_acrobeat
+    command: [ "redis-server", "--requirepass", "${REDIS_PASSWORD}" ]
     env_file:
       - .env
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
     networks:
       - my_app_network
     restart: always
@@ -39,6 +43,14 @@ services:
         reservations:
           cpus: '0.25'
           memory: 256M
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+    user: "1001:1001"
 
   bot:
     build: .
@@ -55,14 +67,15 @@ services:
       - my_app_network
     restart: unless-stopped
     command: uv run python main.py
-    tty: true
-    stdin_open: true
+    security_opt:
+      - no-new-privileges:true
 
 networks:
   my_app_network:
     driver: bridge
 
-
 volumes:
   pgdata:
+    driver: local
+  redis_data:
     driver: local
