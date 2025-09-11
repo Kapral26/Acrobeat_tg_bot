@@ -80,7 +80,7 @@ class ClipPeriodSchema(BaseModel):
 
         :return: Число с плавающей точкой, представляющее начальное время.
         """
-        return self.time_marker_to_seconds(self.finish) + 2 * 1000
+        return self.time_marker_to_seconds(self.finish)
 
     @staticmethod
     def time_marker_to_seconds(time_marker: str) -> int:
