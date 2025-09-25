@@ -88,7 +88,7 @@ jobs:
           ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
             "mkdir -p $DEPLOY_DIR"
           rsync -avz --delete \
-            -e "ssh -p 2233 -o StrictHostKeyChecking=no -p 2233" \
+            -e "ssh -p 2233 -o StrictHostKeyChecking=no" \
             ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:$DEPLOY_DIR/${{ github.event.repository.name }}
 
       - name: "📝 Generate .env file on server"
@@ -112,28 +112,42 @@ jobs:
 
       - name: "🛠️ Prepare Docker volumes"
         run: |
-          ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+          ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
           set -e
           cd $DEPLOY_DIR/${{ github.event.repository.name }}
 
-          # Создаём volume, если его нет
-          docker volume create pgdata || true
-          docker volume create redis_data || true
+          # create volumes if missing
+          sudo docker volume create pgdata || true
+          sudo docker volume create redis_data || true
 
-          # Узнаём путь к volume
-          PGDATA_PATH=$(docker volume inspect pgdata -f '{{ .Mountpoint }}')
-          REDISDATA_PATH=$(docker volume inspect redis_data -f '{{ .Mountpoint }}')
+          # get mountpoints
+          PGDATA_PATH=\$(sudo docker volume inspect pgdata -f '{{ .Mountpoint }}' 2>/dev/null || echo "")
+          REDISDATA_PATH=\$(sudo docker volume inspect redis_data -f '{{ .Mountpoint }}' 2>/dev/null || echo "")
 
-          # Проставляем владельцев
-          sudo chown -R 999:999 "$PGDATA_PATH"
-          sudo chown -R 1001:1001 "$REDISDATA_PATH"
+          echo "pgdata mountpoint: \$PGDATA_PATH"
+          echo "redis_data mountpoint: \$REDISDATA_PATH"
+
+          if [ -n "\$PGDATA_PATH" ] && [ -d "\$PGDATA_PATH" ]; then
+            echo "Setting owner for pgdata -> 999:999"
+            sudo chown -R 999:999 "\$PGDATA_PATH" || true
+          else
+            echo "Warning: pgdata mountpoint not found or not a dir; skipping chown"
+          fi
+
+          if [ -n "\$REDISDATA_PATH" ] && [ -d "\$REDISDATA_PATH" ]; then
+            echo "Setting owner for redis_data -> 1001:1001"
+            sudo chown -R 1001:1001 "\$REDISDATA_PATH" || true
+          else
+            echo "Warning: redis_data mountpoint not found or not a dir; skipping chown"
+          fi
+
           EOF
 
       - name: "🚀 Start database for migrations"
         run: |
           ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
           cd $DEPLOY_DIR/${{ github.event.repository.name }}
-          docker compose down
+          docker compose down || true
           docker compose up -d --build database
           EOF
 
