@@ -165,7 +165,6 @@ class BaseMsgCleanerRepository(RedisClientWrapper):
         """
         key = self.messages_key.format(user_id=user_id)
         await self.rpush(key, str(message_id))
-        await self.expire(key, 30)  # истёкнет через 30 секунд
 
     async def delete_messages_to_delete(self, user_id: int) -> None:
         """
