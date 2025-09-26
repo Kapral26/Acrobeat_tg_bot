@@ -112,35 +112,21 @@ jobs:
 
       - name: "🛠️ Prepare Docker volumes"
         run: |
-          ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
+          ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
           set -e
           cd $DEPLOY_DIR/${{ github.event.repository.name }}
 
-          # create volumes if missing
-          sudo docker volume create pgdata || true
-          sudo docker volume create redis_data || true
+          # Создаём volume, если нет
+          docker volume create pgdata || true
+          docker volume create redis_data || true
 
-          # get mountpoints
-          PGDATA_PATH=\$(sudo docker volume inspect pgdata -f '{{ .Mountpoint }}' 2>/dev/null || echo "")
-          REDISDATA_PATH=\$(sudo docker volume inspect redis_data -f '{{ .Mountpoint }}' 2>/dev/null || echo "")
+          # Узнаём путь к volume
+          PGDATA_PATH=$(docker volume inspect pgdata -f '{{ .Mountpoint }}')
+          REDISDATA_PATH=$(docker volume inspect redis_data -f '{{ .Mountpoint }}')
 
-          echo "pgdata mountpoint: \$PGDATA_PATH"
-          echo "redis_data mountpoint: \$REDISDATA_PATH"
-
-          if [ -n "\$PGDATA_PATH" ] && [ -d "\$PGDATA_PATH" ]; then
-            echo "Setting owner for pgdata -> 999:999"
-            sudo chown -R 999:999 "\$PGDATA_PATH" || true
-          else
-            echo "Warning: pgdata mountpoint not found or not a dir; skipping chown"
-          fi
-
-          if [ -n "\$REDISDATA_PATH" ] && [ -d "\$REDISDATA_PATH" ]; then
-            echo "Setting owner for redis_data -> 1001:1001"
-            sudo chown -R 1001:1001 "\$REDISDATA_PATH" || true
-          else
-            echo "Warning: redis_data mountpoint not found or not a dir; skipping chown"
-          fi
-
+          # Проставляем владельцев так, чтобы контейнеры могли писать
+          sudo chown -R 999:999 "$PGDATA_PATH"    # postgres (uid=999,gid=999 в alpine)
+          sudo chown -R 999:1000 "$REDISDATA_PATH" # redis (uid=999,gid=1000 в alpine)
           EOF
 
       - name: "🚀 Start database for migrations"

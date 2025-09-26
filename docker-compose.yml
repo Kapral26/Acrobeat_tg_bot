@@ -50,7 +50,6 @@ services:
       retries: 5
     security_opt:
       - no-new-privileges:true
-    user: "1001:1001"
 
   bot:
     build: .
