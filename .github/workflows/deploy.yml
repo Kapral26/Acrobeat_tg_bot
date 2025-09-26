@@ -110,28 +110,6 @@ jobs:
           EOT
           EOF
 
-      - name: "🛠️ Prepare Docker volumes"
-        run: |
-          ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
-          set -e
-          cd $DEPLOY_DIR/${{ github.event.repository.name }}
-
-          # Создаём volume, если нет
-          docker volume create pgdata || true
-          docker volume create redis_data || true
-
-          # Узнаём путь к volume
-          PGDATA_PATH=$(docker volume inspect pgdata -f '{{ .Mountpoint }}')
-          REDISDATA_PATH=$(docker volume inspect redis_data -f '{{ .Mountpoint }}')
-
-          echo "pgdata mountpoint: \$PGDATA_PATH"
-          echo "redis_data mountpoint: \$REDISDATA_PATH"
-
-          # Проставляем владельцев так, чтобы контейнеры могли писать
-          sudo chown -R 999:999 "$PGDATA_PATH"    # postgres (uid=999,gid=999 в alpine)
-          sudo chown -R 999:1000 "$REDISDATA_PATH" # redis (uid=999,gid=1000 в alpine)
-          EOF
-
       - name: "🚀 Start database for migrations"
         run: |
           ssh -p 2233 -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
