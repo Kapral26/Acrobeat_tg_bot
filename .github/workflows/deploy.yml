@@ -117,8 +117,8 @@ jobs:
           cd $DEPLOY_DIR/${{ github.event.repository.name }}
 
           # Создаём volume, если нет
-          sudo docker volume create pgdata || true
-          sudo docker volume create redis_data || true
+          docker volume create pgdata || true
+          docker volume create redis_data || true
 
           # Узнаём путь к volume
           PGDATA_PATH=$(docker volume inspect pgdata -f '{{ .Mountpoint }}')
